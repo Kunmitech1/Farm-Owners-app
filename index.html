@@ -599,26 +599,38 @@ try {
     document.getElementById('syncStatus').textContent = 'Offline';
   }, 8000);
 
-  supabase
-    .channel('owner-dashboard-live')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, () => {
+  const channel = supabase.channel('owner-dashboard-live');
+  
+  // Logs changes
+  ['INSERT','UPDATE','DELETE'].forEach(event => {
+    channel.on('postgres_changes', { event, schema: 'public', table: 'logs' }, () => {
       if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
       if (!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
-      renderGroupManage();
-      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => {
-      renderGroupManage();
-      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
-    })
-    .subscribe(status => {
-      clearTimeout(syncTimeout);
-      const on = status === 'SUBSCRIBED';
-      document.getElementById('syncDot').className = 'sync-dot' + (on ? '' : ' offline');
-      document.getElementById('syncStatus').textContent = on ? 'Live' : 'Offline';
     });
+  });
+  
+  // Groups changes
+  ['INSERT','UPDATE','DELETE'].forEach(event => {
+    channel.on('postgres_changes', { event, schema: 'public', table: 'groups' }, () => {
+      renderGroupManage();
+      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
+    });
+  });
+  
+  // Workers changes
+  ['INSERT','UPDATE','DELETE'].forEach(event => {
+    channel.on('postgres_changes', { event, schema: 'public', table: 'workers' }, () => {
+      renderGroupManage();
+      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
+    });
+  });
+
+  channel.subscribe(status => {
+    clearTimeout(syncTimeout);
+    const on = status === 'SUBSCRIBED';
+    document.getElementById('syncDot').className = 'sync-dot' + (on ? '' : ' offline');
+    document.getElementById('syncStatus').textContent = on ? 'Live' : 'Offline';
+  });
 } catch (e) {
   console.error('Realtime channel failed to start:', e);
   document.getElementById('syncDot').className = 'sync-dot offline';

@@ -6,27 +6,23 @@
 <title>Owner Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
 <style>
+/* same styles as previous owner version – already included in your code */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--navy:#0f2744;--navy2:#1e3a5f;--green:#16a34a;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#0f172a;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
 .app{max-width:560px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:100px}
-
 .header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:24px 22px 18px;color:#fff}
 .header-top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .header-icon{width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
 .header h1{font-size:1.2rem;font-weight:800}
 .header-date{font-size:0.8rem;opacity:0.75;margin-left:52px}
-
 .nav{display:flex;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 .nav button{flex:1;padding:10px 6px;border:none;border-radius:12px;background:var(--bg);color:var(--slate);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.2s}
 .nav button.active{background:var(--navy);color:#fff}
-
 .card{background:var(--card);border-radius:20px;padding:20px;margin:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
 .section-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
-
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .stat-box{border-radius:16px;padding:16px 14px;text-align:center;border:1.5px solid var(--border)}
 .stat-box.green{background:#f0fdf4;border-color:#bbf7d0}
@@ -41,23 +37,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .stat-box.red .stat-num{color:var(--red)}
 .stat-box.blue .stat-num{color:#2563eb}
 .stat-label{font-size:0.7rem;color:var(--slate);margin-top:6px;font-weight:600;line-height:1.3}
-
 .alert{padding:12px 16px;border-radius:12px;margin:12px 18px;font-size:0.84rem;font-weight:600;display:flex;align-items:flex-start;gap:10px}
 .alert-icon{font-size:1rem;flex-shrink:0;margin-top:2px}
 .alert.danger{background:#fef2f2;color:var(--red);border-left:4px solid var(--red)}
 .alert.warning{background:#fffbeb;color:#92400e;border-left:4px solid #f59e0b}
 .alert.success{background:#f0fdf4;color:#166534;border-left:4px solid var(--green)}
-
 .group-tabs,.range-tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
 .group-tab,.range-tab{padding:8px 18px;border-radius:24px;border:1.5px solid var(--border);background:var(--bg);font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;color:var(--slate)}
 .group-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .range-tab.active{background:var(--green);color:#fff;border-color:var(--green)}
-
 .data-row{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:12px}
 .data-row:last-child{border-bottom:none}
 .data-row-label{flex:1;font-size:0.85rem;font-weight:600}
 .data-row-val{font-size:0.82rem;color:var(--slate)}
-
 .worker-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
 .worker-row:last-child{border-bottom:none}
 .avatar-sm{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:800;flex-shrink:0}
@@ -65,22 +57,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .worker-name{font-weight:700;font-size:0.9rem}
 .worker-meta{font-size:0.73rem;color:var(--slate);margin-top:2px}
 .remove-btn{background:#fef2f2;color:var(--red);border:none;padding:8px 14px;border-radius:10px;font-size:0.74rem;font-weight:700;cursor:pointer}
-
 .form-group{margin-bottom:18px}
 .form-label{display:block;font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--text)}
 .form-input,select.form-input{width:100%;padding:15px 16px;border:2px solid var(--border);border-radius:12px;font-size:0.95rem;font-family:inherit;background:#fff}
 .form-input:focus,select.form-input:focus{outline:none;border-color:var(--navy)}
 .add-row{display:flex;gap:10px;align-items:flex-end}
 .add-row .form-input{flex:1}
-
 .btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:10px;transition:opacity 0.2s}
 .btn:active{opacity:0.85}
 .btn-primary{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
 .btn-secondary{background:#fff;color:var(--text);border:2px solid var(--border)}
 .btn-sm{width:auto;padding:10px 20px;margin-top:0}
-
 .report-box{background:#f8fafc;border:1px dashed var(--border);border-radius:12px;padding:18px;font-family:'Courier New',monospace;font-size:0.75rem;white-space:pre-wrap;max-height:340px;overflow-y:auto;line-height:1.7}
-
 .timeline-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start}
 .timeline-item:last-child{border-bottom:none}
 .t-dot{width:10px;height:10px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0}
@@ -89,12 +77,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .t-title{font-weight:700;font-size:0.88rem;line-height:1.4}
 .t-desc{font-size:0.76rem;color:var(--slate);margin-top:3px;line-height:1.4}
 .t-time{font-size:0.7rem;color:var(--slate);white-space:nowrap;text-align:right;line-height:1.4}
-
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:#fff;border-top:1px solid var(--border);display:flex;padding:10px 0 22px;z-index:200;box-shadow:0 -2px 8px rgba(0,0,0,0.06)}
 .bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:none;background:none;color:var(--slate);font-size:0.64rem;font-weight:600;cursor:pointer;padding:4px 0}
 .bottom-nav button.active{color:var(--navy)}
 .nav-icon{font-size:1.3rem;line-height:1}
-
 .hidden{display:none !important}
 .empty-state{text-align:center;padding:40px 20px;color:var(--slate);font-size:0.9rem}
 .chart-container{margin:24px 0;position:relative;height:220px;width:100%}
@@ -108,7 +94,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .total-item{text-align:center;background:rgba(255,255,255,0.1);border-radius:12px;padding:12px 8px}
 .total-num{font-size:1.4rem;font-weight:900;line-height:1}
 .total-label{font-size:0.65rem;opacity:0.75;margin-top:4px;font-weight:600;line-height:1.2}
-
 .sync-indicator{font-size:0.7rem;opacity:0.75;margin-left:52px;margin-top:2px;display:flex;align-items:center;gap:5px}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block}
 .sync-dot.offline{background:#f87171}
@@ -214,6 +199,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
+/* ═══════════════════════════════════════════════════════════
+   SUPABASE CONFIG – EDIT THESE TWO LINES ONLY
+   ═══════════════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://lrocighnjtundvcxvhar.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyb2NpZ2huanR1bmR2Y3h2aGFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwMzk0MTQsImV4cCI6MjEwMjYxNTQxNH0.w8fmLmbs6M4HMUG5e--eSpNynLs3BDSvwT8ZIZR9i50';
+/* ═══════════════════════════════════════════════════════════ */
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Check if config is present
+if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('PASTE')) {
+  alert('Supabase anon key not configured. Open the HTML and replace PASTE_YOUR_ANON_KEY_HERE.');
+}
+
 // ── helpers ───────────────────────────────────────────
 const RANGE_DAYS = { '1W':7, '2W':14, '1M':30, '3M':90, '6M':180, '1Y':365 };
 function todayStr(){ return new Date().toDateString(); }
@@ -246,7 +245,6 @@ async function getWorkers(){
 function init(){
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-
   updateOverview();
   renderGroupManage();
 }
@@ -363,7 +361,6 @@ function updateOverview(){
 
     renderGroupView(groups, tl);
 
-    // Recent activity
     const filtered = logs.slice().reverse().filter(l => groups.some(g => g.id === l.groupId)).slice(0,12);
     document.getElementById('recentLogs').innerHTML = filtered.length ?
       filtered.map(l => {
@@ -585,14 +582,9 @@ function showTab(tab){
   if(tab==='analytics') updateAnalytics();
 }
 
-// Run the app immediately — this must never depend on realtime working.
 init();
 
-// ── Realtime connection indicator + live refresh (best-effort only) ────
-// One channel, listening to all three tables. Its subscribe status
-// doubles as the "connected/offline" indicator. Wrapped so that any
-// failure here (network block, key issue, etc.) never breaks the rest
-// of the dashboard — you can still use every tab manually either way.
+// ── Realtime (best-effort) ────────────────────────────
 try {
   const syncTimeout = setTimeout(() => {
     document.getElementById('syncDot').className = 'sync-dot offline';
@@ -600,31 +592,20 @@ try {
   }, 8000);
 
   const channel = supabase.channel('owner-dashboard-live');
-  
-  // Logs changes
   ['INSERT','UPDATE','DELETE'].forEach(event => {
     channel.on('postgres_changes', { event, schema: 'public', table: 'logs' }, () => {
       if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
       if (!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
     });
-  });
-  
-  // Groups changes
-  ['INSERT','UPDATE','DELETE'].forEach(event => {
     channel.on('postgres_changes', { event, schema: 'public', table: 'groups' }, () => {
       renderGroupManage();
       if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
     });
-  });
-  
-  // Workers changes
-  ['INSERT','UPDATE','DELETE'].forEach(event => {
     channel.on('postgres_changes', { event, schema: 'public', table: 'workers' }, () => {
       renderGroupManage();
       if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
     });
   });
-
   channel.subscribe(status => {
     clearTimeout(syncTimeout);
     const on = status === 'SUBSCRIBED';
@@ -632,7 +613,6 @@ try {
     document.getElementById('syncStatus').textContent = on ? 'Live' : 'Offline';
   });
 } catch (e) {
-  console.error('Realtime channel failed to start:', e);
   document.getElementById('syncDot').className = 'sync-dot offline';
   document.getElementById('syncStatus').textContent = 'Offline';
 }

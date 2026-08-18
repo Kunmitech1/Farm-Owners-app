@@ -214,29 +214,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
-// ── Realtime connection indicator + live refresh ───────
-// One channel, listening to all three tables. Its subscribe status
-// doubles as the "connected/offline" indicator.
-const liveChannel = supabase
-  .channel('owner-dashboard-live')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, () => {
-    if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
-    if (!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
-  })
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
-    renderGroupManage();
-    if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
-  })
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => {
-    renderGroupManage();
-    if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
-  })
-  .subscribe(status => {
-    const on = status === 'SUBSCRIBED';
-    document.getElementById('syncDot').className = 'sync-dot' + (on ? '' : ' offline');
-    document.getElementById('syncStatus').textContent = on ? 'Live' : 'Offline';
-  });
-
 // ── helpers ───────────────────────────────────────────
 const RANGE_DAYS = { '1W':7, '2W':14, '1M':30, '3M':90, '6M':180, '1Y':365 };
 function todayStr(){ return new Date().toDateString(); }
@@ -608,7 +585,45 @@ function showTab(tab){
   if(tab==='analytics') updateAnalytics();
 }
 
+// Run the app immediately — this must never depend on realtime working.
 init();
+
+// ── Realtime connection indicator + live refresh (best-effort only) ────
+// One channel, listening to all three tables. Its subscribe status
+// doubles as the "connected/offline" indicator. Wrapped so that any
+// failure here (network block, key issue, etc.) never breaks the rest
+// of the dashboard — you can still use every tab manually either way.
+try {
+  const syncTimeout = setTimeout(() => {
+    document.getElementById('syncDot').className = 'sync-dot offline';
+    document.getElementById('syncStatus').textContent = 'Offline';
+  }, 8000);
+
+  supabase
+    .channel('owner-dashboard-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'logs' }, () => {
+      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
+      if (!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, () => {
+      renderGroupManage();
+      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => {
+      renderGroupManage();
+      if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
+    })
+    .subscribe(status => {
+      clearTimeout(syncTimeout);
+      const on = status === 'SUBSCRIBED';
+      document.getElementById('syncDot').className = 'sync-dot' + (on ? '' : ' offline');
+      document.getElementById('syncStatus').textContent = on ? 'Live' : 'Offline';
+    });
+} catch (e) {
+  console.error('Realtime channel failed to start:', e);
+  document.getElementById('syncDot').className = 'sync-dot offline';
+  document.getElementById('syncStatus').textContent = 'Offline';
+}
 </script>
 </body>
 </html>

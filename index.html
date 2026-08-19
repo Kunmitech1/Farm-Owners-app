@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Owner Dashboard</title>
+<!-- Chart.js & Firebase -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
 <style>
+/* Keep all existing CSS from your previous owner.html – same as before */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--navy:#0f2744;--navy2:#1e3a5f;--green:#16a34a;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#0f172a;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
@@ -116,7 +118,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="tab-groups" class="hidden">
   <div class="card"><div class="section-label">➕ Add Group</div>
     <div class="form-group"><div class="form-label">Group Name</div><input type="text" class="form-input" id="newGroupName" placeholder="e.g. Group A"></div>
-    <div class="form-group"><div class="form-label">Group PIN</div><input type="text" class="form-input" id="newGroupPin" placeholder="e.g. 1234"></div>
+    <div class="form-group"><div class="form-label">Group PIN (workers will use this to log in)</div><input type="text" class="form-input" id="newGroupPin" placeholder="e.g. 5678" maxlength="8"></div>
     <button class="btn btn-primary" onclick="addGroup()">➕ Add Group</button>
     <div id="groupListManage" style="margin-top:20px"></div>
   </div>
@@ -161,12 +163,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="card">
       <div class="section-label">📄 Report</div>
       <div class="report-box" id="reportText"></div>
-      <button class="btn btn-primary" style="margin-top:12px" onclick="shareWhatsApp()">📱 WhatsApp</button>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="shareWhatsApp()">📱 Send via WhatsApp</button>
     </div>
   </div>
 </div>
 
-</div>
+</div><!-- end .app -->
 
 <div class="bottom-nav">
   <button class="active" onclick="showTab('overview')"><span class="nav-icon">📊</span>Overview</button>
@@ -176,19 +178,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// FIREBASE CONFIG – REPLACE WITH YOUR OWN
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// FIREBASE CONFIG – REPLACE WITH YOUR ACTUAL CONFIG
+// ═══════════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
-  authDomain: "farm-appp-4f7f6.firebaseapp.com",
-  projectId: "farm-appp-4f7f6",
-  storageBucket: "farm-appp-4f7f6.firebasestorage.app",
-  messagingSenderId: "637677324102",
-  appId: "1:637677324102:web:f564617ac59012909c0747",
-  measurementId: "G-1QTPB6MSVV"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -209,6 +210,7 @@ var waterRange = 'daily';
 function init(){
   document.getElementById('headerDate').textContent=
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
   // Real-time listeners
   db.ref('logs').on('value', snap => {
     updateOverview();
@@ -222,20 +224,31 @@ function init(){
     renderGroupManage();
     if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
   });
+
   updateOverview();
   renderGroupManage();
 }
 
-// ── data access (async) ──────────────────────────────
-async function getLogs(){ const s=await db.ref('logs').once('value'); return s.val()?Object.values(s.val()):[]; }
-async function getGroups(){ const s=await db.ref('groups').once('value'); return s.val()?Object.values(s.val()):[]; }
-async function getWorkers(){ const s=await db.ref('workers').once('value'); return s.val()?Object.values(s.val()):[]; }
+// ── data access ──────────────────────────────────────
+async function getLogs(){
+  const s = await db.ref('logs').once('value');
+  return s.val() ? Object.values(s.val()) : [];
+}
+async function getGroups(){
+  const s = await db.ref('groups').once('value');
+  return s.val() ? Object.values(s.val()) : [];
+}
+async function getWorkers(){
+  const s = await db.ref('workers').once('value');
+  return s.val() ? Object.values(s.val()) : [];
+}
 
-// ── GROUPS management ─────────────────────────────────
+// ── GROUPS management (CORRECTED) ─────────────────────
 async function addGroup(){
   const name = document.getElementById('newGroupName').value.trim();
   const pin  = document.getElementById('newGroupPin').value.trim();
   if(!name || !pin){ alert('Enter both a group name and a PIN'); return; }
+
   const id = 'g' + Date.now();
   try {
     await db.ref('groups/' + id).set({ id, name, pin });
@@ -243,7 +256,7 @@ async function addGroup(){
     document.getElementById('newGroupPin').value  = '';
     renderGroupManage();
   } catch(e) {
-    alert('Failed to add group. Check Firebase rules and console.');
+    alert('Failed to add group. Open console (F12) and check for errors.');
     console.error(e);
   }
 }
@@ -251,11 +264,11 @@ async function addGroup(){
 async function deleteGroup(id){
   if(!confirm('Delete this group and all its workers?')) return;
   try {
-    // remove all workers in this group
+    // Remove associated workers
     const snap = await db.ref('workers').once('value');
-    if(snap.val()){
+    if (snap.val()) {
       Object.entries(snap.val()).forEach(async ([k, w]) => {
-        if(w.groupId === id) await db.ref('workers/' + k).remove();
+        if (w.groupId === id) await db.ref('workers/' + k).remove();
       });
     }
     await db.ref('groups/' + id).remove();
@@ -270,6 +283,7 @@ async function addWorker(){
   const name = document.getElementById('newWorkerName').value.trim();
   const groupId = document.getElementById('workerGroupSelect').value;
   if(!name || !groupId){ alert('Enter worker name and select a group'); return; }
+
   const id = 'w' + Date.now();
   try {
     await db.ref('workers/' + id).set({
@@ -335,9 +349,9 @@ function renderGroupManage(){
 // ── OVERVIEW ──────────────────────────────────────────
 function updateOverview(){
   Promise.all([getLogs(),getGroups(),getWorkers()]).then(([logs,groups,workers])=>{
-    const tl=logs.filter(l=>new Date(l.date).toDateString()===todayStr());
-    const clogs=tl.filter(l=>l.farm==='chicken');
-    const rlogs=tl.filter(l=>l.farm==='rabbit');
+    const tl = logs.filter(l=>new Date(l.date).toDateString()===todayStr());
+    const clogs = tl.filter(l=>l.farm==='chicken');
+    const rlogs = tl.filter(l=>l.farm==='rabbit');
 
     const cBirds=sum(clogs,'birds'), cFeed=sum(clogs,'feedGrams'), cWater=sum(clogs,'waterLitres');
     const cGood=sum(clogs,'eggsGood'), cCracked=sum(clogs,'eggsCracked'), cShelless=sum(clogs,'eggsShelless'), cBroken=sum(clogs,'eggsBroken');
@@ -367,8 +381,10 @@ function updateOverview(){
     document.getElementById('groupFilterTabs').innerHTML=
       `<span class="group-tab ${activeGroupFilter==='all'?'active':''}" onclick="filterGroup('all')">All Groups</span>`+
       groups.map(g=>`<span class="group-tab ${activeGroupFilter===g.id?'active':''}" onclick="filterGroup('${g.id}')">${g.name}</span>`).join('');
-    renderGroupView(groups,workers,tl);
 
+    renderGroupView(groups, tl);
+
+    // Recent activity
     let recentHtml='';
     if(logs.length===0){
       recentHtml='<div class="empty-state">No recent farm activity.</div>';
@@ -407,7 +423,7 @@ function updateOverview(){
 
 function filterGroup(id){ activeGroupFilter=id; updateOverview(); }
 
-function renderGroupView(groups,workers,tl){
+function renderGroupView(groups, tl){
   const target = activeGroupFilter==='all' ? groups : groups.filter(g=>g.id===activeGroupFilter);
   if(!target.length){ document.getElementById('groupView').innerHTML='<div class="empty-state">No groups.</div>'; return; }
   let html='';

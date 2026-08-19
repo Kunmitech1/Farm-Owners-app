@@ -232,56 +232,103 @@ async function getGroups(){ const s=await db.ref('groups').once('value'); return
 async function getWorkers(){ const s=await db.ref('workers').once('value'); return s.val()?Object.values(s.val()):[]; }
 
 // ── GROUPS management ─────────────────────────────────
-function addGroup(){
-  const name=document.getElementById('newGroupName').value.trim();
-  const pin=document.getElementById('newGroupPin').value.trim();
-  if(!name||!pin){alert('Enter name and PIN');return;}
-  db.ref('groups').push({ id:'g'+Date.now(), name, pin });
-  document.getElementById('newGroupName').value='';
-  document.getElementById('newGroupPin').value='';
+async function addGroup(){
+  const name = document.getElementById('newGroupName').value.trim();
+  const pin  = document.getElementById('newGroupPin').value.trim();
+  if(!name || !pin){ alert('Enter both a group name and a PIN'); return; }
+  const id = 'g' + Date.now();
+  try {
+    await db.ref('groups/' + id).set({ id, name, pin });
+    document.getElementById('newGroupName').value = '';
+    document.getElementById('newGroupPin').value  = '';
+    renderGroupManage();
+  } catch(e) {
+    alert('Failed to add group. Check Firebase rules and console.');
+    console.error(e);
+  }
 }
-function deleteGroup(key){
-  if(!confirm('Delete this group and its workers?')) return;
-  db.ref('groups/'+key).remove();
-  db.ref('workers').once('value').then(snap=>{
-    const workers=snap.val();
-    if(workers){
-      Object.entries(workers).forEach(([k,w])=>{
-        if(w.groupId===key) db.ref('workers/'+k).remove();
+
+async function deleteGroup(id){
+  if(!confirm('Delete this group and all its workers?')) return;
+  try {
+    // remove all workers in this group
+    const snap = await db.ref('workers').once('value');
+    if(snap.val()){
+      Object.entries(snap.val()).forEach(async ([k, w]) => {
+        if(w.groupId === id) await db.ref('workers/' + k).remove();
       });
     }
-  });
+    await db.ref('groups/' + id).remove();
+    renderGroupManage();
+  } catch(e) {
+    alert('Failed to delete group');
+    console.error(e);
+  }
 }
-function addWorker(){
-  const name=document.getElementById('newWorkerName').value.trim();
-  const groupKey=document.getElementById('workerGroupSelect').value;
-  if(!name||!groupKey){alert('Enter worker name and select group');return;}
-  db.ref('workers').push({
-    id:'w'+Date.now(),
-    name,
-    groupId:groupKey,
-    initials:name.charAt(0).toUpperCase()
-  });
-  document.getElementById('newWorkerName').value='';
+
+async function addWorker(){
+  const name = document.getElementById('newWorkerName').value.trim();
+  const groupId = document.getElementById('workerGroupSelect').value;
+  if(!name || !groupId){ alert('Enter worker name and select a group'); return; }
+  const id = 'w' + Date.now();
+  try {
+    await db.ref('workers/' + id).set({
+      id,
+      name,
+      groupId,
+      initials: name.charAt(0).toUpperCase()
+    });
+    document.getElementById('newWorkerName').value = '';
+    renderGroupManage();
+  } catch(e) {
+    alert('Failed to add worker');
+    console.error(e);
+  }
 }
-function deleteWorker(key){ if(confirm('Remove worker?')) db.ref('workers/'+key).remove(); }
+
+async function deleteWorker(id){
+  if(!confirm('Remove this worker?')) return;
+  try {
+    await db.ref('workers/' + id).remove();
+    renderGroupManage();
+  } catch(e) {
+    alert('Failed to delete worker');
+    console.error(e);
+  }
+}
 
 function renderGroupManage(){
-  getGroups().then(groups=>{
-    const sel=document.getElementById('workerGroupSelect');
-    sel.innerHTML='<option value="">Select group…</option>'+
-      groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
-    getWorkers().then(workers=>{
-      document.getElementById('groupListManage').innerHTML=groups.length?
-        groups.map(g=>`<div class="worker-row"><div class="avatar-sm">G</div><div class="worker-info"><div class="worker-name">${g.name}</div><div class="worker-meta">PIN: ${g.pin} | ${workers.filter(w=>w.groupId===g.id).length} worker(s)</div></div><button class="remove-btn" onclick="deleteGroup('${g.id}')">🗑 Remove</button></div>`).join(''):
-        '<div class="empty-state">No groups added yet.</div>';
-      document.getElementById('allWorkersList').innerHTML=workers.length?
-        workers.map(w=>{
-          const grp=groups.find(g=>g.id===w.groupId);
-          return `<div class="worker-row"><div class="avatar-sm">${w.initials}</div><div class="worker-info"><div class="worker-name">${w.name}</div><div class="worker-meta">${grp?grp.name:'Unknown group'}</div></div><button class="remove-btn" onclick="deleteWorker('${w.id}')">🗑</button></div>`;
-        }).join(''):
-        '<div class="empty-state">No workers added yet.</div>';
-    });
+  Promise.all([getGroups(), getWorkers()]).then(([groups, workers]) => {
+    const sel = document.getElementById('workerGroupSelect');
+    sel.innerHTML = '<option value="">Select group…</option>' +
+      groups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+
+    document.getElementById('groupListManage').innerHTML = groups.length ?
+      groups.map(g => `
+        <div class="worker-row">
+          <div class="avatar-sm">G</div>
+          <div class="worker-info">
+            <div class="worker-name">${g.name}</div>
+            <div class="worker-meta">PIN: ${g.pin} &nbsp;|&nbsp; ${workers.filter(w=>w.groupId===g.id).length} worker(s)</div>
+          </div>
+          <button class="remove-btn" onclick="deleteGroup('${g.id}')">🗑 Remove</button>
+        </div>`).join('') :
+      '<div class="empty-state">No groups added yet.</div>';
+
+    document.getElementById('allWorkersList').innerHTML = workers.length ?
+      workers.map(w => {
+        const grp = groups.find(g => g.id === w.groupId);
+        return `
+          <div class="worker-row">
+            <div class="avatar-sm">${w.initials}</div>
+            <div class="worker-info">
+              <div class="worker-name">${w.name}</div>
+              <div class="worker-meta">${grp ? grp.name : 'Unknown group'}</div>
+            </div>
+            <button class="remove-btn" onclick="deleteWorker('${w.id}')">🗑</button>
+          </div>`;
+      }).join('') :
+      '<div class="empty-state">No workers added yet.</div>';
   });
 }
 

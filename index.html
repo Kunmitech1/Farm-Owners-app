@@ -17,7 +17,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .header-icon{width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
 .header h1{font-size:1.2rem;font-weight:800}
 .header-date{font-size:0.8rem;opacity:0.75;margin-left:52px}
-.nav{display:flex;gap:6px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.nav{display:flex;gap:6px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 .nav button{flex:1;padding:9px 4px;border:none;border-radius:10px;background:var(--bg);color:var(--slate);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s}
 .nav button.active{background:var(--navy);color:#fff}
 .card{background:var(--card);border-radius:20px;padding:20px;margin:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
@@ -215,7 +215,7 @@ var charts = {};
 var activeRange = '1W';
 var waterRange = 'daily';
 var analyticsGroup = 'all';
-var lastReportType = 'daily'; // for WhatsApp share
+var lastReportType = 'daily';
 
 // ── init ──────────────────────────────────────────────
 function init(){
@@ -322,7 +322,7 @@ function setAnalyticsGroup(id){
   if(!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
 }
 
-// ── RECENT ACTIVITY (moved to its own tab) ────────────
+// ── RECENT ACTIVITY (separate tab) ───────────────────
 function renderRecentActivity(){
   Promise.all([getLogs(),getGroups()]).then(([logs,groups])=>{
     let recentHtml=logs.slice().reverse().filter(l=>groups.some(g=>g.id===l.groupId)).slice(0,20).map(l=>{
@@ -337,7 +337,7 @@ function renderRecentActivity(){
         details=`Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
       } else {
         desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
-        details=`Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
+        details=`Bought: M:${l.boughtAdultMale||0}, F:${l.boughtAdultFemale||0}, W:${l.boughtWeaners||0}, K:${l.boughtKits||0} | Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
         if(l.feedTreatment) details+=` | 💊 Feed: ${l.feedTreatment}`;
         if(l.waterTreatment) details+=` | 💊 Water: ${l.waterTreatment}`;
         if(l.weight) details+=` | Weight: ${l.weight}kg (Wk ${l.weekNum||'—'})`;
@@ -397,7 +397,8 @@ function updateOverview(){
         let mismatch=false;
         rabbitLogs.forEach(l=>{
           const totalMet=l.rMale+l.rFemale+l.rWeaners+l.rKits;
-          expected=expected+(l.newKits||0)-(l.deaths||0)-(l.rabbitsSold||0);
+          const bought = (l.boughtAdultMale||0)+(l.boughtAdultFemale||0)+(l.boughtWeaners||0)+(l.boughtKits||0);
+          expected=expected+(l.newKits||0)+bought-(l.deaths||0)-(l.rabbitsSold||0);
           if(totalMet!==expected) mismatch=true;
         });
         if(mismatch){
@@ -442,6 +443,7 @@ function renderGroupView(groups, tl){
       rabbitLogs.forEach(l=>{
         html+=`<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">
           Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits} |
+          Bought: M:${l.boughtAdultMale||0}, F:${l.boughtAdultFemale||0}, W:${l.boughtWeaners||0}, K:${l.boughtKits||0} |
           Feed:${l.feedType||'—'} ${l.feedGrams}g, Water:${l.waterLitres}L |
           Litters:${l.litters}, New Kits:${l.newKits}, Sold:${l.rabbitsSold} |
           Deaths: M:${l.dMale}, F:${l.dFemale}, W:${l.dWeaners}, K:${l.dKits}
@@ -578,7 +580,7 @@ function destroyAllCharts(){
   ['yield','mortality','weight','sales','water'].forEach(k=>{if(charts[k]){charts[k].destroy();charts[k]=null;}});
 }
 
-// ── REPORTS (group by group) ─────────────────────────
+// ── REPORTS (grouped by group) ───────────────────────
 async function makeReport(type){
   lastReportType = type;
   const logs=await getLogs();
@@ -598,13 +600,11 @@ async function makeReport(type){
   text += '║       OWNER DASHBOARD REPORT       ║\n';
   text += '╚════════════════════════════════════╝\n' + title + '\n\n';
 
-  // Overall summary (optional, short)
+  text += '━━━━━━━━ OVERALL SUMMARY ━━━━━━━━\n';
   const clogs = periodLogs.filter(l=>l.farm==='chicken');
   const rlogs = periodLogs.filter(l=>l.farm==='rabbit');
-  text += '━━━━━━━━ OVERALL SUMMARY ━━━━━━━━\n';
   text += `Total Chicken Entries: ${clogs.length}\nTotal Rabbit Entries: ${rlogs.length}\n\n`;
 
-  // Per-group details
   groups.forEach(g => {
     const gLogs = periodLogs.filter(l=>l.groupId===g.id);
     if(gLogs.length === 0) return;
@@ -625,6 +625,7 @@ async function makeReport(type){
       text += '  ── RABBIT ──\n';
       gRlogs.forEach(l => {
         text += `    ${l.workerName}: Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits}\n`;
+        text += `      Bought: AdultM:${l.boughtAdultMale||0}, AdultF:${l.boughtAdultFemale||0}, Weaners:${l.boughtWeaners||0}, Kits:${l.boughtKits||0}\n`;
         text += `      Feed: ${l.feedType||'—'} ${l.feedGrams}g, Water: ${l.waterLitres}L\n`;
         if(l.weight) text += `      Weight: ${l.weight}kg (Week ${l.weekNum||'—'})\n`;
         if(l.matingDate) text += `      Mating Date: ${l.matingDate}, Rabbits Mated: ${l.rabbitsMated||0}, EDD: ${l.edd||'—'}, Delivery: ${l.deliveryDate||'—'}, Expected: ${l.expectedAtBirth||0}\n`;
@@ -632,6 +633,7 @@ async function makeReport(type){
         text += `      Deaths: Male:${l.dMale}, Female:${l.dFemale}, Weaner:${l.dWeaners}, Kit:${l.dKits}${l.cause?' ('+l.cause+')':''}\n`;
       });
       text += `    Totals — Males: ${sum(gRlogs,'rMale')}, Females: ${sum(gRlogs,'rFemale')}, Weaners: ${sum(gRlogs,'rWeaners')}, Kits: ${sum(gRlogs,'rKits')}\n`;
+      text += `    Bought: AdultM:${sum(gRlogs,'boughtAdultMale')}, AdultF:${sum(gRlogs,'boughtAdultFemale')}, Weaners:${sum(gRlogs,'boughtWeaners')}, Kits:${sum(gRlogs,'boughtKits')}\n`;
       text += `    Litters: ${sum(gRlogs,'litters')}, New Kits: ${sum(gRlogs,'newKits')}, Sold: ${sum(gRlogs,'rabbitsSold')}\n`;
       text += `    Deaths (M/F/W/K): ${sum(gRlogs,'dMale')}/${sum(gRlogs,'dFemale')}/${sum(gRlogs,'dWeaners')}/${sum(gRlogs,'dKits')}\n\n`;
     }

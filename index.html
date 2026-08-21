@@ -166,14 +166,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="tab-reports" class="hidden">
   <div class="card">
     <div class="section-label">📋 Generate Report</div>
-    <button class="btn btn-primary" onclick="makeReport('daily')">📄 Today's Full Report</button>
-    <button class="btn btn-primary" style="margin-top:10px" onclick="makeReport('weekly')">📊 7-Day Report</button>
+    <div class="form-group">
+      <div class="form-label">Select Date</div>
+      <input type="date" class="form-input" id="reportDate">
+    </div>
+    <button class="btn btn-primary" onclick="makeReport('daily', document.getElementById('reportDate').value)">📄 Daily Report for Selected Date</button>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="makeReport('weekly')">📊 7-Day Report (Ending Today)</button>
   </div>
   <div id="reportBox" class="hidden">
     <div class="card">
       <div class="section-label">📄 Report</div>
       <div class="report-box" id="reportText"></div>
       <button class="btn btn-primary" style="margin-top:12px" onclick="shareWhatsApp()">📱 Send via WhatsApp</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="printReport()">🖨️ Print Report</button>
     </div>
   </div>
 </div>
@@ -221,6 +226,9 @@ var lastReportType = 'daily';
 function init(){
   document.getElementById('headerDate').textContent=
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  // Set default date for report picker
+  document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
 
   db.ref('logs').on('value', snap => {
     updateOverview();
@@ -580,68 +588,85 @@ function destroyAllCharts(){
   ['yield','mortality','weight','sales','water'].forEach(k=>{if(charts[k]){charts[k].destroy();charts[k]=null;}});
 }
 
-// ── REPORTS (grouped by group) ───────────────────────
-async function makeReport(type){
+// ── REPORTS (with date selection and print) ──────────
+async function makeReport(type, specificDate = null) {
   lastReportType = type;
-  const logs=await getLogs();
-  const groups=await getGroups();
-  const today=new Date();
+  const logs = await getLogs();
+  const groups = await getGroups();
+  const today = new Date();
   let periodLogs, title;
-  if(type==='daily'){
-    periodLogs=logs.filter(l=>new Date(l.date).toDateString()===today.toDateString());
-    title='DAILY REPORT — '+today.toLocaleDateString();
+
+  if (type === 'daily') {
+    if (specificDate) {
+      const selected = new Date(specificDate);
+      periodLogs = logs.filter(l => new Date(l.date).toDateString() === selected.toDateString());
+      title = 'DAILY REPORT — ' + selected.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    } else {
+      periodLogs = logs.filter(l => new Date(l.date).toDateString() === today.toDateString());
+      title = 'DAILY REPORT — ' + today.toLocaleDateString();
+    }
   } else {
-    const wa=new Date(); wa.setDate(wa.getDate()-7);
-    periodLogs=logs.filter(l=>new Date(l.date)>=wa);
-    title='7-DAY REPORT — ending '+today.toLocaleDateString();
+    const wa = new Date();
+    wa.setDate(wa.getDate() - 7);
+    periodLogs = logs.filter(l => new Date(l.date) >= wa);
+    title = '7-DAY REPORT — ending ' + today.toLocaleDateString();
   }
 
-  let text = '╔════════════════════════════════════╗\n';
-  text += '║       OWNER DASHBOARD REPORT       ║\n';
-  text += '╚════════════════════════════════════╝\n' + title + '\n\n';
-
+  const clogs = periodLogs.filter(l => l.farm === 'chicken');
+  const rlogs = periodLogs.filter(l => l.farm === 'rabbit');
+  let text = '╔════════════════════════════════════╗\n║       OWNER DASHBOARD REPORT       ║\n╚════════════════════════════════════╝\n' + title + '\n\n';
   text += '━━━━━━━━ OVERALL SUMMARY ━━━━━━━━\n';
-  const clogs = periodLogs.filter(l=>l.farm==='chicken');
-  const rlogs = periodLogs.filter(l=>l.farm==='rabbit');
   text += `Total Chicken Entries: ${clogs.length}\nTotal Rabbit Entries: ${rlogs.length}\n\n`;
 
   groups.forEach(g => {
-    const gLogs = periodLogs.filter(l=>l.groupId===g.id);
-    if(gLogs.length === 0) return;
-    const gClogs = gLogs.filter(l=>l.farm==='chicken');
-    const gRlogs = gLogs.filter(l=>l.farm==='rabbit');
+    const gLogs = periodLogs.filter(l => l.groupId === g.id);
+    if (gLogs.length === 0) return;
+    const gClogs = gLogs.filter(l => l.farm === 'chicken');
+    const gRlogs = gLogs.filter(l => l.farm === 'rabbit');
 
     text += `━━━━━━━━ GROUP: ${g.name} ━━━━━━━━\n`;
 
-    if(gClogs.length){
+    if (gClogs.length) {
       text += '  ── CHICKEN ──\n';
       gClogs.forEach(l => {
-        text += `    ${l.workerName}: ${l.birds} birds, ${l.eggsGood} good eggs, ${l.eggsCracked}/${l.eggsShelless}/${l.eggsBroken} (cracked/shelless/broken), ${l.cratesSold} crates, ₦${fmt(l.cratesRevenue)}, ${l.deaths} deaths${l.cause?' ('+l.cause+')':''}\n`;
+        text += `    ${l.workerName}: ${l.birds} birds, ${l.eggsGood} good eggs, ${l.eggsCracked}/${l.eggsShelless}/${l.eggsBroken} (cracked/shelless/broken), ${l.cratesSold} crates, ₦${fmt(l.cratesRevenue)}, ${l.deaths} deaths${l.cause ? ' (' + l.cause + ')' : ''}\n`;
       });
-      text += `    Totals — Birds: ${sum(gClogs,'birds')}, Eggs: ${sum(gClogs,'eggsGood')}, Crates: ${sum(gClogs,'cratesSold')}, Revenue: ₦${fmt(sum(gClogs,'cratesRevenue'))}, Deaths: ${sum(gClogs,'deaths')}\n\n`;
+      text += `    Totals — Birds: ${sum(gClogs, 'birds')}, Eggs: ${sum(gClogs, 'eggsGood')}, Crates: ${sum(gClogs, 'cratesSold')}, Revenue: ₦${fmt(sum(gClogs, 'cratesRevenue'))}, Deaths: ${sum(gClogs, 'deaths')}\n\n`;
     }
 
-    if(gRlogs.length){
+    if (gRlogs.length) {
       text += '  ── RABBIT ──\n';
       gRlogs.forEach(l => {
         text += `    ${l.workerName}: Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits}\n`;
-        text += `      Bought: AdultM:${l.boughtAdultMale||0}, AdultF:${l.boughtAdultFemale||0}, Weaners:${l.boughtWeaners||0}, Kits:${l.boughtKits||0}\n`;
-        text += `      Feed: ${l.feedType||'—'} ${l.feedGrams}g, Water: ${l.waterLitres}L\n`;
-        if(l.weight) text += `      Weight: ${l.weight}kg (Week ${l.weekNum||'—'})\n`;
-        if(l.matingDate) text += `      Mating Date: ${l.matingDate}, Rabbits Mated: ${l.rabbitsMated||0}, EDD: ${l.edd||'—'}, Delivery: ${l.deliveryDate||'—'}, Expected: ${l.expectedAtBirth||0}\n`;
+        text += `      Bought: AdultM:${l.boughtAdultMale || 0}, AdultF:${l.boughtAdultFemale || 0}, Weaners:${l.boughtWeaners || 0}, Kits:${l.boughtKits || 0}\n`;
+        text += `      Feed: ${l.feedType || '—'} ${l.feedGrams}g, Water: ${l.waterLitres}L\n`;
+        if (l.weight) text += `      Weight: ${l.weight}kg (Week ${l.weekNum || '—'})\n`;
+        if (l.matingDate) text += `      Mating Date: ${l.matingDate}, Rabbits Mated: ${l.rabbitsMated || 0}, EDD: ${l.edd || '—'}, Delivery: ${l.deliveryDate || '—'}, Expected: ${l.expectedAtBirth || 0}\n`;
         text += `      Litters: ${l.litters}, New Kits: ${l.newKits}, Sold: ${l.rabbitsSold}\n`;
-        text += `      Deaths: Male:${l.dMale}, Female:${l.dFemale}, Weaner:${l.dWeaners}, Kit:${l.dKits}${l.cause?' ('+l.cause+')':''}\n`;
+        text += `      Deaths: Male:${l.dMale}, Female:${l.dFemale}, Weaner:${l.dWeaners}, Kit:${l.dKits}${l.cause ? ' (' + l.cause + ')' : ''}\n`;
       });
-      text += `    Totals — Males: ${sum(gRlogs,'rMale')}, Females: ${sum(gRlogs,'rFemale')}, Weaners: ${sum(gRlogs,'rWeaners')}, Kits: ${sum(gRlogs,'rKits')}\n`;
-      text += `    Bought: AdultM:${sum(gRlogs,'boughtAdultMale')}, AdultF:${sum(gRlogs,'boughtAdultFemale')}, Weaners:${sum(gRlogs,'boughtWeaners')}, Kits:${sum(gRlogs,'boughtKits')}\n`;
-      text += `    Litters: ${sum(gRlogs,'litters')}, New Kits: ${sum(gRlogs,'newKits')}, Sold: ${sum(gRlogs,'rabbitsSold')}\n`;
-      text += `    Deaths (M/F/W/K): ${sum(gRlogs,'dMale')}/${sum(gRlogs,'dFemale')}/${sum(gRlogs,'dWeaners')}/${sum(gRlogs,'dKits')}\n\n`;
+      text += `    Totals — Males: ${sum(gRlogs, 'rMale')}, Females: ${sum(gRlogs, 'rFemale')}, Weaners: ${sum(gRlogs, 'rWeaners')}, Kits: ${sum(gRlogs, 'rKits')}\n`;
+      text += `    Bought: AdultM:${sum(gRlogs, 'boughtAdultMale')}, AdultF:${sum(gRlogs, 'boughtAdultFemale')}, Weaners:${sum(gRlogs, 'boughtWeaners')}, Kits:${sum(gRlogs, 'boughtKits')}\n`;
+      text += `    Litters: ${sum(gRlogs, 'litters')}, New Kits: ${sum(gRlogs, 'newKits')}, Sold: ${sum(gRlogs, 'rabbitsSold')}\n`;
+      text += `    Deaths (M/F/W/K): ${sum(gRlogs, 'dMale')}/${sum(gRlogs, 'dFemale')}/${sum(gRlogs, 'dWeaners')}/${sum(gRlogs, 'dKits')}\n\n`;
     }
   });
 
   text += 'Generated: ' + new Date().toLocaleString();
   document.getElementById('reportText').textContent = text;
   document.getElementById('reportBox').classList.remove('hidden');
+}
+
+function printReport() {
+  const reportContent = document.getElementById('reportText').textContent;
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write('<html><head><title>Farm Report</title></head><body>');
+  printWindow.document.write('<pre style="white-space: pre-wrap; font-family: monospace; font-size: 14px;">');
+  printWindow.document.write(reportContent);
+  printWindow.document.write('</pre>');
+  printWindow.document.write('</body></html>');
+  printWindow.document.close();
+  printWindow.print();
 }
 
 function shareWhatsApp(){

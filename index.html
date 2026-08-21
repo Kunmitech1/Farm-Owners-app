@@ -17,8 +17,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .header-icon{width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
 .header h1{font-size:1.2rem;font-weight:800}
 .header-date{font-size:0.8rem;opacity:0.75;margin-left:52px}
-.nav{display:flex;gap:8px;padding:12px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-.nav button{flex:1;padding:10px 6px;border:none;border-radius:12px;background:var(--bg);color:var(--slate);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.nav{display:flex;gap:6px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.nav button{flex:1;padding:9px 4px;border:none;border-radius:10px;background:var(--bg);color:var(--slate);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s}
 .nav button.active{background:var(--navy);color:#fff}
 .card{background:var(--card);border-radius:20px;padding:20px;margin:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
 .section-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
@@ -72,10 +72,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .t-title{font-weight:700;font-size:0.88rem;line-height:1.4}
 .t-desc{font-size:0.76rem;color:var(--slate);margin-top:3px;line-height:1.4}
 .t-time{font-size:0.7rem;color:var(--slate);white-space:nowrap;text-align:right;line-height:1.4}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:#fff;border-top:1px solid var(--border);display:flex;padding:10px 0 22px;z-index:200;box-shadow:0 -2px 8px rgba(0,0,0,0.06)}
-.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:none;background:none;color:var(--slate);font-size:0.64rem;font-weight:600;cursor:pointer;padding:4px 0}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:#fff;border-top:1px solid var(--border);display:flex;padding:8px 0 20px;z-index:200;box-shadow:0 -2px 8px rgba(0,0,0,0.06)}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:var(--slate);font-size:0.62rem;font-weight:600;cursor:pointer;padding:4px 0}
 .bottom-nav button.active{color:var(--navy)}
-.nav-icon{font-size:1.3rem;line-height:1}
+.nav-icon{font-size:1.2rem;line-height:1}
 .hidden{display:none !important}
 .empty-state{text-align:center;padding:40px 20px;color:var(--slate);font-size:0.9rem}
 .chart-container{margin:24px 0;position:relative;height:220px;width:100%}
@@ -99,6 +99,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <button class="active" onclick="showTab('overview')" id="nav-overview">📊 Overview</button>
   <button onclick="showTab('groups')" id="nav-groups">👥 Groups</button>
   <button onclick="showTab('analytics')" id="nav-analytics">📈 Analytics</button>
+  <button onclick="showTab('activity')" id="nav-activity">🕐 Activity</button>
   <button onclick="showTab('reports')" id="nav-reports">📋 Reports</button>
 </div>
 
@@ -109,7 +110,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="card"><div class="section-label">🐔 Chicken Farm — Today</div><div class="stat-grid" id="chickenStats"></div></div>
   <div class="card"><div class="section-label">🐇 Rabbit Farm — Today</div><div class="stat-grid" id="rabbitStats"></div></div>
   <div class="card"><div class="section-label">👥 By Group</div><div class="group-tabs" id="groupFilterTabs"></div><div id="groupView"></div></div>
-  <div class="card"><div class="section-label">🕐 Recent Activity</div><div id="recentLogs"></div></div>
 </div>
 
 <!-- GROUPS TAB -->
@@ -157,6 +157,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 </div>
 
+<!-- ACTIVITY TAB -->
+<div id="tab-activity" class="hidden">
+  <div class="card"><div class="section-label">🕐 Recent Activity</div><div id="recentLogs"></div></div>
+</div>
+
 <!-- REPORTS TAB -->
 <div id="tab-reports" class="hidden">
   <div class="card">
@@ -168,7 +173,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="card">
       <div class="section-label">📄 Report</div>
       <div class="report-box" id="reportText"></div>
-      <button class="btn btn-primary" style="margin-top:12px" onclick="shareWhatsApp()">📱 WhatsApp</button>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="shareWhatsApp()">📱 Send via WhatsApp</button>
     </div>
   </div>
 </div>
@@ -179,6 +184,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <button class="active" onclick="showTab('overview')"><span class="nav-icon">📊</span>Overview</button>
   <button onclick="showTab('groups')"><span class="nav-icon">👥</span>Groups</button>
   <button onclick="showTab('analytics')"><span class="nav-icon">📈</span>Analytics</button>
+  <button onclick="showTab('activity')"><span class="nav-icon">🕐</span>Activity</button>
   <button onclick="showTab('reports')"><span class="nav-icon">📋</span>Reports</button>
 </div>
 
@@ -209,27 +215,40 @@ var charts = {};
 var activeRange = '1W';
 var waterRange = 'daily';
 var analyticsGroup = 'all';
+var lastReportType = 'daily'; // for WhatsApp share
 
 // ── init ──────────────────────────────────────────────
 function init(){
   document.getElementById('headerDate').textContent=
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
   db.ref('logs').on('value', snap => {
     updateOverview();
+    if (!document.getElementById('tab-activity').classList.contains('hidden')) renderRecentActivity();
     if (!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
   });
   db.ref('groups').on('value', snap => {
     renderGroupManage();
     updateOverview();
     renderAnalyticsGroupTabs();
+    if (!document.getElementById('tab-activity').classList.contains('hidden')) renderRecentActivity();
   });
   db.ref('workers').on('value', snap => {
     renderGroupManage();
     if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
   });
+
   updateOverview();
   renderGroupManage();
   renderAnalyticsGroupTabs();
+  renderRecentActivity();
+
+  // Auto-open reports tab if URL has ?tab=reports
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('tab') === 'reports') {
+    showTab('reports');
+    makeReport('daily');
+  }
 }
 
 // ── data access ──────────────────────────────────────
@@ -303,6 +322,39 @@ function setAnalyticsGroup(id){
   if(!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
 }
 
+// ── RECENT ACTIVITY (moved to its own tab) ────────────
+function renderRecentActivity(){
+  Promise.all([getLogs(),getGroups()]).then(([logs,groups])=>{
+    let recentHtml=logs.slice().reverse().filter(l=>groups.some(g=>g.id===l.groupId)).slice(0,20).map(l=>{
+      const t=new Date(l.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+      const d=new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const grpName=groups.find(g=>g.id===l.groupId)?.name||'Unknown';
+      const worker=l.workerName||'Worker';
+      const farmEmoji=l.farm==='chicken'?'🐔':'🐇';
+      let desc='',details='';
+      if(l.farm==='chicken'){
+        desc=`${worker} — ${l.birds||0} birds, ${l.eggsGood||0} good eggs`;
+        details=`Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
+      } else {
+        desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
+        details=`Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
+        if(l.feedTreatment) details+=` | 💊 Feed: ${l.feedTreatment}`;
+        if(l.waterTreatment) details+=` | 💊 Water: ${l.waterTreatment}`;
+        if(l.weight) details+=` | Weight: ${l.weight}kg (Wk ${l.weekNum||'—'})`;
+        details+=` | Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}`;
+        details+=` | Deaths: M:${l.dMale||0}, F:${l.dFemale||0}, W:${l.dWeaners||0}, K:${l.dKits||0}${l.cause?' ('+l.cause+')':''}`;
+        if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
+      }
+      return `<div class="timeline-item">
+        <div class="t-dot ${l.deaths>0?'danger':''}"></div>
+        <div class="t-body"><div class="t-title">${farmEmoji} ${desc}</div><div class="t-desc">${details}</div><div style="font-size:0.7rem;color:var(--slate);margin-top:2px">${grpName}</div></div>
+        <div class="t-time"><div>${d}</div><div>${t}</div></div>
+      </div>`;
+    }).join('') || '<div class="empty-state">No recent farm activity.</div>';
+    document.getElementById('recentLogs').innerHTML=recentHtml;
+  });
+}
+
 // ── OVERVIEW with validation ──────────────────────────
 function updateOverview(){
   Promise.all([getLogs(),getGroups(),getWorkers()]).then(([logs,groups,workers])=>{
@@ -357,40 +409,10 @@ function updateOverview(){
     if(!tl.length) alerts=`<div class="alert warning"><span class="alert-icon">⚠️</span>No entries today.</div>`;
     document.getElementById('dashAlerts').innerHTML=alerts;
 
-    // group filter tabs
     document.getElementById('groupFilterTabs').innerHTML=
       `<span class="group-tab ${activeGroupFilter==='all'?'active':''}" onclick="filterGroup('all')">All Groups</span>`+
       groups.map(g=>`<span class="group-tab ${activeGroupFilter===g.id?'active':''}" onclick="filterGroup('${g.id}')">${g.name}</span>`).join('');
     renderGroupView(groups, tl);
-
-    // Recent activity (always present)
-    let recentHtml=logs.slice().reverse().filter(l=>groups.some(g=>g.id===l.groupId)).slice(0,12).map(l=>{
-      const t=new Date(l.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      const d=new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      const grpName=groups.find(g=>g.id===l.groupId)?.name||'Unknown';
-      const worker=l.workerName||'Worker';
-      const farmEmoji=l.farm==='chicken'?'🐔':'🐇';
-      let desc='',details='';
-      if(l.farm==='chicken'){
-        desc=`${worker} — ${l.birds||0} birds, ${l.eggsGood||0} good eggs`;
-        details=`Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
-      } else {
-        desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
-        details=`Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
-        if(l.feedTreatment) details+=` | 💊 Feed: ${l.feedTreatment}`;
-        if(l.waterTreatment) details+=` | 💊 Water: ${l.waterTreatment}`;
-        if(l.weight) details+=` | Weight: ${l.weight}kg (Wk ${l.weekNum||'—'})`;
-        details+=` | Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}`;
-        details+=` | Deaths: M:${l.dMale||0}, F:${l.dFemale||0}, W:${l.dWeaners||0}, K:${l.dKits||0}${l.cause?' ('+l.cause+')':''}`;
-        if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
-      }
-      return `<div class="timeline-item">
-        <div class="t-dot ${l.deaths>0?'danger':''}"></div>
-        <div class="t-body"><div class="t-title">${farmEmoji} ${desc}</div><div class="t-desc">${details}</div><div style="font-size:0.7rem;color:var(--slate);margin-top:2px">${grpName}</div></div>
-        <div class="t-time"><div>${d}</div><div>${t}</div></div>
-      </div>`;
-    }).join('') || '<div class="empty-state">No recent farm activity.</div>';
-    document.getElementById('recentLogs').innerHTML=recentHtml;
   });
 }
 
@@ -458,7 +480,7 @@ async function updateAnalytics(){
   const totalDeathsC=sum(periodLogs.filter(l=>l.farm==='chicken'),'deaths');
   const totalDeathsR=sum(periodLogs.filter(l=>l.farm==='rabbit'),'deaths');
   const totalFeedKg=(sum(periodLogs,'feedGrams')/1000).toFixed(1);
-  const totalWater=sum(periodLogs,'waterLitres').toFixed(1);
+  const totalWater=sum(periodLogs,'waterLitres').toFixed(0);
   document.getElementById('rangeLabel').textContent=activeRange==='1W'?'This Week':activeRange==='2W'?'Last 2 Weeks':activeRange==='1M'?'This Month':activeRange==='3M'?'Last 3 Months':activeRange==='6M'?'Last 6 Months':'This Year';
   document.getElementById('weeklyKPI').innerHTML=
     stat('green',totalEggs,'Total Eggs')+stat('amber',totalRabbitsSold,'Rabbits Sold')+stat('red',totalDeathsC+totalDeathsR,'Total Deaths')+stat('blue',totalFeedKg+' kg','Feed')+stat('blue',totalWater+' L','Water');
@@ -472,10 +494,10 @@ async function updateAnalytics(){
   charts.yield=new Chart(ctxEgg,{
     type:'bar',
     data:{labels:labelDays,datasets:[{label:'Good Eggs',data:eggData,backgroundColor:'#16a34a',borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Eggs'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Eggs'},ticks:{precision:0}}}}
   });
 
-  // Filter group logs
+  // Group filter
   const groupLogs=analyticsGroup==='all'?periodLogs:periodLogs.filter(l=>l.groupId===analyticsGroup);
 
   // Mortality
@@ -489,7 +511,7 @@ async function updateAnalytics(){
       {label:'Chicken Deaths',data:cDeathsData,borderColor:'#d97706',backgroundColor:'rgba(253,230,138,0.3)',tension:0.2,fill:true},
       {label:'Rabbit Deaths',data:rDeathsData,borderColor:'#dc2626',backgroundColor:'rgba(254,202,202,0.3)',tension:0.2,fill:true}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'},ticks:{precision:0}}}}
   });
 
   // Weight
@@ -512,7 +534,7 @@ async function updateAnalytics(){
   charts.sales=new Chart(ctxSales,{
     type:'bar',
     data:{labels:labelDays,datasets:[{label:'Rabbits Sold',data:salesData,backgroundColor:'#be185d',borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Sold'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Sold'},ticks:{precision:0}}}}
   });
 
   updateWaterChart();
@@ -548,7 +570,7 @@ async function updateWaterChart(){
   charts.water=new Chart(ctxWater,{
     type:'bar',
     data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#16a34a',borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'},ticks:{precision:0}}}}
   });
 }
 
@@ -556,8 +578,9 @@ function destroyAllCharts(){
   ['yield','mortality','weight','sales','water'].forEach(k=>{if(charts[k]){charts[k].destroy();charts[k]=null;}});
 }
 
-// ── REPORTS ──────────────────────────────────────────
+// ── REPORTS (group by group) ─────────────────────────
 async function makeReport(type){
+  lastReportType = type;
   const logs=await getLogs();
   const groups=await getGroups();
   const today=new Date();
@@ -570,31 +593,73 @@ async function makeReport(type){
     periodLogs=logs.filter(l=>new Date(l.date)>=wa);
     title='7-DAY REPORT — ending '+today.toLocaleDateString();
   }
-  const clogs=periodLogs.filter(l=>l.farm==='chicken');
-  const rlogs=periodLogs.filter(l=>l.farm==='rabbit');
-  let text='╔════════════════════════════════════╗\n║       OWNER DASHBOARD REPORT       ║\n╚════════════════════════════════════╝\n'+title+'\n\n';
-  text+='━━━━━━━━ CHICKEN FARM ━━━━━━━━\nBirds: '+sum(clogs,'birds')+'\nGood Eggs: '+sum(clogs,'eggsGood')+'\nCracked/Shelless/Broken: '+sum(clogs,'eggsCracked')+'/'+sum(clogs,'eggsShelless')+'/'+sum(clogs,'eggsBroken')+'\nCrates: '+sum(clogs,'cratesSold')+' | ₦'+fmt(sum(clogs,'cratesRevenue'))+'\nDeaths: '+sum(clogs,'deaths')+'\n\n';
-  text+='━━━━━━━━ RABBIT FARM ━━━━━━━━\nMales: '+sum(rlogs,'rMale')+'\nFemales: '+sum(rlogs,'rFemale')+'\nWeaners: '+sum(rlogs,'rWeaners')+'\nKits: '+sum(rlogs,'rKits')+'\nNew Litters/Kits: '+sum(rlogs,'litters')+'/'+sum(rlogs,'newKits')+'\nSold: '+sum(rlogs,'rabbitsSold')+'\nFeed: '+sum(rlogs,'feedGrams')+'g | Water: '+sum(rlogs,'waterLitres')+'L\nMating: '+rlogs.filter(l=>l.matingDate).map(l=>l.matingDate).join(',')||'—'+'\nDeaths (M/F/W/K): '+sum(rlogs,'dMale')+'/'+sum(rlogs,'dFemale')+'/'+sum(rlogs,'dWeaners')+'/'+sum(rlogs,'dKits')+'\n\n';
-  text+='━━━━━━━━ BY GROUP ━━━━━━━━\n';
-  groups.forEach(g=>{const gl=periodLogs.filter(l=>l.groupId===g.id);text+=`${g.name}: ${gl.length} entries\n`;});
-  text+='\nGenerated: '+new Date().toLocaleString();
-  document.getElementById('reportText').textContent=text;
+
+  let text = '╔════════════════════════════════════╗\n';
+  text += '║       OWNER DASHBOARD REPORT       ║\n';
+  text += '╚════════════════════════════════════╝\n' + title + '\n\n';
+
+  // Overall summary (optional, short)
+  const clogs = periodLogs.filter(l=>l.farm==='chicken');
+  const rlogs = periodLogs.filter(l=>l.farm==='rabbit');
+  text += '━━━━━━━━ OVERALL SUMMARY ━━━━━━━━\n';
+  text += `Total Chicken Entries: ${clogs.length}\nTotal Rabbit Entries: ${rlogs.length}\n\n`;
+
+  // Per-group details
+  groups.forEach(g => {
+    const gLogs = periodLogs.filter(l=>l.groupId===g.id);
+    if(gLogs.length === 0) return;
+    const gClogs = gLogs.filter(l=>l.farm==='chicken');
+    const gRlogs = gLogs.filter(l=>l.farm==='rabbit');
+
+    text += `━━━━━━━━ GROUP: ${g.name} ━━━━━━━━\n`;
+
+    if(gClogs.length){
+      text += '  ── CHICKEN ──\n';
+      gClogs.forEach(l => {
+        text += `    ${l.workerName}: ${l.birds} birds, ${l.eggsGood} good eggs, ${l.eggsCracked}/${l.eggsShelless}/${l.eggsBroken} (cracked/shelless/broken), ${l.cratesSold} crates, ₦${fmt(l.cratesRevenue)}, ${l.deaths} deaths${l.cause?' ('+l.cause+')':''}\n`;
+      });
+      text += `    Totals — Birds: ${sum(gClogs,'birds')}, Eggs: ${sum(gClogs,'eggsGood')}, Crates: ${sum(gClogs,'cratesSold')}, Revenue: ₦${fmt(sum(gClogs,'cratesRevenue'))}, Deaths: ${sum(gClogs,'deaths')}\n\n`;
+    }
+
+    if(gRlogs.length){
+      text += '  ── RABBIT ──\n';
+      gRlogs.forEach(l => {
+        text += `    ${l.workerName}: Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits}\n`;
+        text += `      Feed: ${l.feedType||'—'} ${l.feedGrams}g, Water: ${l.waterLitres}L\n`;
+        if(l.weight) text += `      Weight: ${l.weight}kg (Week ${l.weekNum||'—'})\n`;
+        if(l.matingDate) text += `      Mating Date: ${l.matingDate}, Rabbits Mated: ${l.rabbitsMated||0}, EDD: ${l.edd||'—'}, Delivery: ${l.deliveryDate||'—'}, Expected: ${l.expectedAtBirth||0}\n`;
+        text += `      Litters: ${l.litters}, New Kits: ${l.newKits}, Sold: ${l.rabbitsSold}\n`;
+        text += `      Deaths: Male:${l.dMale}, Female:${l.dFemale}, Weaner:${l.dWeaners}, Kit:${l.dKits}${l.cause?' ('+l.cause+')':''}\n`;
+      });
+      text += `    Totals — Males: ${sum(gRlogs,'rMale')}, Females: ${sum(gRlogs,'rFemale')}, Weaners: ${sum(gRlogs,'rWeaners')}, Kits: ${sum(gRlogs,'rKits')}\n`;
+      text += `    Litters: ${sum(gRlogs,'litters')}, New Kits: ${sum(gRlogs,'newKits')}, Sold: ${sum(gRlogs,'rabbitsSold')}\n`;
+      text += `    Deaths (M/F/W/K): ${sum(gRlogs,'dMale')}/${sum(gRlogs,'dFemale')}/${sum(gRlogs,'dWeaners')}/${sum(gRlogs,'dKits')}\n\n`;
+    }
+  });
+
+  text += 'Generated: ' + new Date().toLocaleString();
+  document.getElementById('reportText').textContent = text;
   document.getElementById('reportBox').classList.remove('hidden');
 }
 
 function shareWhatsApp(){
-  window.open('https://wa.me/2348132146857?text='+encodeURIComponent("Good day sir, these are the activities that occurred on the farm today. Please check the dashboard."),'_blank');
+  const baseUrl = window.location.href.split('?')[0];
+  const reportLink = baseUrl + '?tab=reports';
+  const periodText = lastReportType === 'daily' ? 'today' : 'this week';
+  const msg = `Good day sir, this is the farm report for ${periodText}. Please check the dashboard for full details: ${reportLink}`;
+  window.open('https://wa.me/2348132146857?text=' + encodeURIComponent(msg), '_blank');
 }
 
 // ── TAB SWITCHING ────────────────────────────────────
 function showTab(tab){
-  ['overview','groups','analytics','reports'].forEach(t=>{
+  ['overview','groups','analytics','activity','reports'].forEach(t=>{
     document.getElementById('tab-'+t).classList.toggle('hidden',t!==tab);
     document.getElementById('nav-'+t).classList.toggle('active',t===tab);
   });
-  document.querySelectorAll('.bottom-nav button').forEach((b,i)=>b.classList.toggle('active',['overview','groups','analytics','reports'][i]===tab));
+  document.querySelectorAll('.bottom-nav button').forEach((b,i)=>b.classList.toggle('active',['overview','groups','analytics','activity','reports'][i]===tab));
   if(tab==='overview') updateOverview();
   if(tab==='groups') renderGroupManage();
+  if(tab==='activity') renderRecentActivity();
   if(tab==='analytics'){ renderAnalyticsGroupTabs(); updateAnalytics(); }
 }
 

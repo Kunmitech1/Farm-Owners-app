@@ -8,7 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
 <style>
-/* All existing styles, same as previous owner.html */
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--navy:#0f2744;--navy2:#1e3a5f;--green:#16a34a;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#0f172a;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
@@ -142,7 +141,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
   </div>
   <div class="card"><div class="section-label">🥚 Total Egg Production (All Groups)</div><div class="chart-container"><canvas id="yieldChart"></canvas></div></div>
-  <div class="card"><div class="section-label">💀 Mortality Trend</div><div class="group-tabs" id="analyticsGroupTabs"></div><div class="chart-container"><canvas id="mortalityChart"></canvas></div></div>
+  <div class="card"><div class="section-label">💀 Mortality Trend</div><div class="group-tabs" id="mortalityGroupTabs"></div><div class="chart-container"><canvas id="mortalityChart"></canvas></div></div>
   <div class="card"><div class="section-label">⚖️ Average Rabbit Weight</div><div class="group-tabs" id="weightGroupTabs"></div><div class="chart-container"><canvas id="weightChart"></canvas></div></div>
   <div class="card"><div class="section-label">💰 Rabbit Sales</div><div class="group-tabs" id="salesGroupTabs"></div><div class="chart-container"><canvas id="salesChart"></canvas></div></div>
   <div class="card">
@@ -201,12 +200,10 @@ const db = firebase.database();
 
 // ── helpers ───────────────────────────────────────────
 const RANGE_DAYS = { '1W':7, '2W':14, '1M':30, '3M':90, '6M':180, '1Y':365 };
-
 function todayStr(){ return new Date().toDateString(); }
 function fmt(n){ return Number(n).toLocaleString(); }
 function sum(arr,key){ return arr.reduce((s,l)=>s+(parseFloat(l[key])||0),0); }
 
-// ── global state ─────────────────────────────────────
 var activeGroupFilter = 'all';
 var charts = {};
 var activeRange = '1W';
@@ -217,7 +214,6 @@ var analyticsGroup = 'all';
 function init(){
   document.getElementById('headerDate').textContent=
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-
   db.ref('logs').on('value', snap => {
     updateOverview();
     if (!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
@@ -231,97 +227,78 @@ function init(){
     renderGroupManage();
     if (!document.getElementById('tab-overview').classList.contains('hidden')) updateOverview();
   });
-
   updateOverview();
   renderGroupManage();
   renderAnalyticsGroupTabs();
 }
 
 // ── data access ──────────────────────────────────────
-async function getLogs(){
-  const s = await db.ref('logs').once('value');
-  return s.val() ? Object.values(s.val()) : [];
-}
-async function getGroups(){
-  const s = await db.ref('groups').once('value');
-  return s.val() ? Object.values(s.val()) : [];
-}
-async function getWorkers(){
-  const s = await db.ref('workers').once('value');
-  return s.val() ? Object.values(s.val()) : [];
-}
+async function getLogs(){ const s=await db.ref('logs').once('value'); return s.val()?Object.values(s.val()):[]; }
+async function getGroups(){ const s=await db.ref('groups').once('value'); return s.val()?Object.values(s.val()):[]; }
+async function getWorkers(){ const s=await db.ref('workers').once('value'); return s.val()?Object.values(s.val()):[]; }
 
-// ── GROUPS management (unchanged from previous corrected version) ──
+// ── GROUPS management ─────────────────────────────────
 async function addGroup(){
-  const name = document.getElementById('newGroupName').value.trim();
-  const pin  = document.getElementById('newGroupPin').value.trim();
-  if(!name || !pin){ alert('Enter both a group name and a PIN'); return; }
-  const id = 'g' + Date.now();
-  try {
-    await db.ref('groups/' + id).set({ id, name, pin });
+  const name=document.getElementById('newGroupName').value.trim();
+  const pin=document.getElementById('newGroupPin').value.trim();
+  if(!name||!pin){alert('Enter both group name and PIN');return;}
+  const id='g'+Date.now();
+  try{
+    await db.ref('groups/'+id).set({id,name,pin});
     document.getElementById('newGroupName').value='';
     document.getElementById('newGroupPin').value='';
     renderGroupManage();
     renderAnalyticsGroupTabs();
-  } catch(e) { alert('Failed to add group'); console.error(e); }
+  }catch(e){alert('Failed to add group');console.error(e);}
 }
 async function deleteGroup(id){
-  if(!confirm('Delete this group and all its workers?')) return;
-  try {
-    const snap = await db.ref('workers').once('value');
-    if(snap.val()) Object.entries(snap.val()).forEach(async ([k,w])=>{ if(w.groupId===id) await db.ref('workers/'+k).remove(); });
-    await db.ref('groups/' + id).remove();
+  if(!confirm('Delete this group and its workers?'))return;
+  try{
+    const snap=await db.ref('workers').once('value');
+    if(snap.val()) Object.entries(snap.val()).forEach(async ([k,w])=>{if(w.groupId===id) await db.ref('workers/'+k).remove();});
+    await db.ref('groups/'+id).remove();
     renderGroupManage();
     renderAnalyticsGroupTabs();
-  } catch(e) { alert('Failed to delete group'); console.error(e); }
+  }catch(e){alert('Failed to delete group');console.error(e);}
 }
 async function addWorker(){
-  const name = document.getElementById('newWorkerName').value.trim();
-  const groupId = document.getElementById('workerGroupSelect').value;
-  if(!name || !groupId){ alert('Enter worker name and select a group'); return; }
-  const id = 'w' + Date.now();
-  try {
-    await db.ref('workers/' + id).set({ id, name, groupId, initials:name.charAt(0).toUpperCase() });
+  const name=document.getElementById('newWorkerName').value.trim();
+  const gid=document.getElementById('workerGroupSelect').value;
+  if(!name||!gid){alert('Enter worker name and select group');return;}
+  const id='w'+Date.now();
+  try{
+    await db.ref('workers/'+id).set({id,name,groupId:gid,initials:name.charAt(0).toUpperCase()});
     document.getElementById('newWorkerName').value='';
     renderGroupManage();
-  } catch(e) { alert('Failed to add worker'); console.error(e); }
+  }catch(e){alert('Failed to add worker');console.error(e);}
 }
 async function deleteWorker(id){
-  if(!confirm('Remove this worker?')) return;
-  try { await db.ref('workers/' + id).remove(); renderGroupManage(); } catch(e) { alert('Failed to delete worker'); }
+  if(!confirm('Remove worker?'))return;
+  try{await db.ref('workers/'+id).remove();renderGroupManage();}catch(e){alert('Failed');}
 }
 function renderGroupManage(){
-  Promise.all([getGroups(), getWorkers()]).then(([groups, workers]) => {
-    const sel = document.getElementById('workerGroupSelect');
-    sel.innerHTML = '<option value="">Select group…</option>' + groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
-    document.getElementById('groupListManage').innerHTML = groups.length ? groups.map(g=>`
-      <div class="worker-row">
-        <div class="avatar-sm">G</div>
-        <div class="worker-info"><div class="worker-name">${g.name}</div><div class="worker-meta">PIN: ${g.pin} | ${workers.filter(w=>w.groupId===g.id).length} worker(s)</div></div>
-        <button class="remove-btn" onclick="deleteGroup('${g.id}')">🗑 Remove</button>
-      </div>`).join('') : '<div class="empty-state">No groups added yet.</div>';
-    document.getElementById('allWorkersList').innerHTML = workers.length ? workers.map(w=>{
-      const grp = groups.find(g=>g.id===w.groupId);
-      return `<div class="worker-row">
-        <div class="avatar-sm">${w.initials}</div>
-        <div class="worker-info"><div class="worker-name">${w.name}</div><div class="worker-meta">${grp?grp.name:'Unknown group'}</div></div>
-        <button class="remove-btn" onclick="deleteWorker('${w.id}')">🗑</button>
-      </div>`;
-    }).join('') : '<div class="empty-state">No workers added yet.</div>';
+  Promise.all([getGroups(),getWorkers()]).then(([groups,workers])=>{
+    const sel=document.getElementById('workerGroupSelect');
+    sel.innerHTML='<option value="">Select group…</option>'+groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+    document.getElementById('groupListManage').innerHTML=groups.length?groups.map(g=>`
+      <div class="worker-row"><div class="avatar-sm">G</div><div class="worker-info"><div class="worker-name">${g.name}</div><div class="worker-meta">PIN: ${g.pin} | ${workers.filter(w=>w.groupId===g.id).length} worker(s)</div></div><button class="remove-btn" onclick="deleteGroup('${g.id}')">🗑 Remove</button></div>`).join(''):'<div class="empty-state">No groups added yet.</div>';
+    document.getElementById('allWorkersList').innerHTML=workers.length?workers.map(w=>{
+      const grp=groups.find(g=>g.id===w.groupId);
+      return `<div class="worker-row"><div class="avatar-sm">${w.initials}</div><div class="worker-info"><div class="worker-name">${w.name}</div><div class="worker-meta">${grp?grp.name:'Unknown group'}</div></div><button class="remove-btn" onclick="deleteWorker('${w.id}')">🗑</button></div>`;
+    }).join(''):'<div class="empty-state">No workers added yet.</div>';
   });
 }
 
-// ── render analytics group tabs ───────────────────────
+// ── analytics group tabs ─────────────────────────────
 function renderAnalyticsGroupTabs(){
-  getGroups().then(groups => {
-    const tabs = ['mortalityGroupTabs','weightGroupTabs','salesGroupTabs','waterGroupTabs'];
-    const base = `<span class="group-tab ${analyticsGroup==='all'?'active':''}" onclick="setAnalyticsGroup('all')">All Groups</span>`;
-    const groupTabs = groups.map(g=>`<span class="group-tab ${analyticsGroup===g.id?'active':''}" onclick="setAnalyticsGroup('${g.id}')">${g.name}</span>`).join('');
-    tabs.forEach(id => document.getElementById(id).innerHTML = base + groupTabs);
+  getGroups().then(groups=>{
+    const base=`<span class="group-tab ${analyticsGroup==='all'?'active':''}" onclick="setAnalyticsGroup('all')">All Groups</span>`;
+    const groupTabs=groups.map(g=>`<span class="group-tab ${analyticsGroup===g.id?'active':''}" onclick="setAnalyticsGroup('${g.id}')">${g.name}</span>`).join('');
+    ['mortalityGroupTabs','weightGroupTabs','salesGroupTabs','waterGroupTabs'].forEach(id=>document.getElementById(id).innerHTML=base+groupTabs);
   });
 }
 function setAnalyticsGroup(id){
-  analyticsGroup = id;
+  analyticsGroup=id;
   renderAnalyticsGroupTabs();
   if(!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
 }
@@ -329,92 +306,83 @@ function setAnalyticsGroup(id){
 // ── OVERVIEW with validation ──────────────────────────
 function updateOverview(){
   Promise.all([getLogs(),getGroups(),getWorkers()]).then(([logs,groups,workers])=>{
-    const tl = logs.filter(l=>new Date(l.date).toDateString()===todayStr());
-    const clogs = tl.filter(l=>l.farm==='chicken');
-    const rlogs = tl.filter(l=>l.farm==='rabbit');
+    const tl=logs.filter(l=>new Date(l.date).toDateString()===todayStr());
+    const clogs=tl.filter(l=>l.farm==='chicken');
+    const rlogs=tl.filter(l=>l.farm==='rabbit');
 
-    // compute totals
     const cBirds=sum(clogs,'birds'), cGood=sum(clogs,'eggsGood'), cCrates=sum(clogs,'cratesSold'), cRevenue=sum(clogs,'cratesRevenue'), cDeaths=sum(clogs,'deaths');
     const rMale=sum(rlogs,'rMale'), rFemale=sum(rlogs,'rFemale'), rWeaners=sum(rlogs,'rWeaners'), rKits=sum(rlogs,'rKits'), rSold=sum(rlogs,'rabbitsSold'), rDeaths=sum(rlogs,'deaths'), rNewKits=sum(rlogs,'newKits');
 
     document.getElementById('chickenStats').innerHTML=
-      stat('amber',cBirds,'Birds Met') + stat('green',cGood,'Good Eggs') +
-      stat('',cCrates,'Crates Sold') + stat('','₦'+fmt(cRevenue),'Revenue') +
-      stat(cDeaths>0?'red':'','Deaths: '+cDeaths,'',true);
-
+      stat('amber',cBirds,'Birds Met')+stat('green',cGood,'Good Eggs')+stat('',cCrates,'Crates Sold')+stat('','₦'+fmt(cRevenue),'Revenue')+stat(cDeaths>0?'red':'','Deaths: '+cDeaths,'',true);
     document.getElementById('rabbitStats').innerHTML=
-      stat('rose',rMale,'Males') + stat('rose',rFemale,'Females') +
-      stat('rose',rWeaners,'Weaners') + stat('rose',rKits,'Kits') +
-      stat('green',rNewKits,'New Kits') + stat('',rSold,'Sold Today') +
-      stat(rDeaths>0?'red':'','Deaths: '+rDeaths,'',true);
+      stat('rose',rMale,'Males')+stat('rose',rFemale,'Females')+stat('rose',rWeaners,'Weaners')+stat('rose',rKits,'Kits')+stat('green',rNewKits,'New Kits')+stat('',rSold,'Sold Today')+stat(rDeaths>0?'red':'','Deaths: '+rDeaths,'',true);
 
     document.getElementById('combinedTotals').innerHTML=
-      totalItem(cBirds,'🐔 Birds') + totalItem(cGood,'🥚 Eggs') + totalItem(cCrates,'📦 Crates') +
-      totalItem(rMale+rFemale+rWeaners+rKits,'🐇 Rabbits') + totalItem(rNewKits,'🐣 Kits') + totalItem(rDeaths+cDeaths,'💀 Deaths');
+      totalItem(cBirds,'🐔 Birds')+totalItem(cGood,'🥚 Eggs')+totalItem(cCrates,'📦 Crates')+
+      totalItem(rMale+rFemale+rWeaners+rKits,'🐇 Rabbits')+totalItem(rNewKits,'🐣 Kits')+totalItem(rDeaths+cDeaths,'💀 Deaths');
 
-    // validation alerts
-    let alerts = '';
-    // for each group, check stock consistency
-    groups.forEach(g => {
-      const chickenLogs = logs.filter(l=>l.farm==='chicken' && l.groupId===g.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
-      const rabbitLogs = logs.filter(l=>l.farm==='rabbit' && l.groupId===g.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
-      if(chickenLogs.length){
-        const base = chickenLogs[0].birds;
-        let expected = base;
-        let mismatch = false;
+    // Stock validation per group
+    let alerts='';
+    groups.forEach(g=>{
+      const chickenLogs=logs.filter(l=>l.farm==='chicken'&&l.groupId===g.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const rabbitLogs=logs.filter(l=>l.farm==='rabbit'&&l.groupId===g.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+      if(chickenLogs.length>0){
+        let base=chickenLogs[0].birds;
+        let expected=base;
+        let mismatch=false;
         chickenLogs.forEach(l=>{
-          expected = expected - (l.deaths||0); // no sales/purchases input for chicken
-          if(l.birds !== expected) mismatch = true;
+          expected=expected-(l.deaths||0);
+          if(l.birds!==expected) mismatch=true;
         });
         if(mismatch){
-          alerts += `<div class="alert danger"><span class="alert-icon">🚨</span>Group ${g.name}: Chicken stock mismatch. Base was ${base}, but recent entry(s) don't add up. Expected current: ${expected}.</div>`;
+          alerts+=`<div class="alert danger"><span class="alert-icon">🚨</span>Group ${g.name} chicken stock mismatch. Base: ${base}, expected now: ${expected}. Check entries.</div>`;
         }
       }
-      if(rabbitLogs.length){
-        const base = rabbitLogs[0].rMale + rabbitLogs[0].rFemale + rabbitLogs[0].rWeaners + rabbitLogs[0].rKits;
-        let expected = base;
+      if(rabbitLogs.length>0){
+        let base=rabbitLogs[0].rMale+rabbitLogs[0].rFemale+rabbitLogs[0].rWeaners+rabbitLogs[0].rKits;
+        let expected=base;
+        let mismatch=false;
         rabbitLogs.forEach(l=>{
-          const totalMet = l.rMale + l.rFemale + l.rWeaners + l.rKits;
-          expected = expected + (l.newKits||0) - (l.deaths||0) - (l.rabbitsSold||0);
-          if(totalMet !== expected) mismatch = true;
+          const totalMet=l.rMale+l.rFemale+l.rWeaners+l.rKits;
+          expected=expected+(l.newKits||0)-(l.deaths||0)-(l.rabbitsSold||0);
+          if(totalMet!==expected) mismatch=true;
         });
         if(mismatch){
-          alerts += `<div class="alert danger"><span class="alert-icon">🚨</span>Group ${g.name}: Rabbit stock mismatch. Base was ${base}, but recent entry(s) don't add up. Expected current: ${expected}.</div>`;
+          alerts+=`<div class="alert danger"><span class="alert-icon">🚨</span>Group ${g.name} rabbit stock mismatch. Base: ${base}, expected now: ${expected}. Check entries.</div>`;
         }
       }
     });
-
-    if(!alerts && tl.length>0) alerts = `<div class="alert success"><span class="alert-icon">✅</span>All stock numbers match expected values.</div>`;
-    if(!tl.length) alerts = `<div class="alert warning"><span class="alert-icon">⚠️</span>No entries submitted today yet.</div>`;
-    document.getElementById('dashAlerts').innerHTML = alerts;
+    if(!alerts && tl.length>0) alerts=`<div class="alert success"><span class="alert-icon">✅</span>All stock numbers match expected values.</div>`;
+    if(!tl.length) alerts=`<div class="alert warning"><span class="alert-icon">⚠️</span>No entries today.</div>`;
+    document.getElementById('dashAlerts').innerHTML=alerts;
 
     // group filter tabs
-    document.getElementById('groupFilterTabs').innerHTML =
-      `<span class="group-tab ${activeGroupFilter==='all'?'active':''}" onclick="filterGroup('all')">All Groups</span>` +
+    document.getElementById('groupFilterTabs').innerHTML=
+      `<span class="group-tab ${activeGroupFilter==='all'?'active':''}" onclick="filterGroup('all')">All Groups</span>`+
       groups.map(g=>`<span class="group-tab ${activeGroupFilter===g.id?'active':''}" onclick="filterGroup('${g.id}')">${g.name}</span>`).join('');
-
     renderGroupView(groups, tl);
 
-    // recent activity (already comprehensive)
-    let recentHtml = logs.slice().reverse().filter(l=>groups.some(g=>g.id===l.groupId)).slice(0,12).map(l=>{
-      const t = new Date(l.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      const d = new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      const grpName = groups.find(g=>g.id===l.groupId)?.name||'Unknown';
-      const worker = l.workerName||'Worker';
-      const farmEmoji = l.farm==='chicken'?'🐔':'🐇';
-      let desc='', details='';
+    // Recent activity (always present)
+    let recentHtml=logs.slice().reverse().filter(l=>groups.some(g=>g.id===l.groupId)).slice(0,12).map(l=>{
+      const t=new Date(l.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+      const d=new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const grpName=groups.find(g=>g.id===l.groupId)?.name||'Unknown';
+      const worker=l.workerName||'Worker';
+      const farmEmoji=l.farm==='chicken'?'🐔':'🐇';
+      let desc='',details='';
       if(l.farm==='chicken'){
-        desc = `${worker} — ${l.birds||0} birds, ${l.eggsGood||0} good eggs`;
-        details = `Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
+        desc=`${worker} — ${l.birds||0} birds, ${l.eggsGood||0} good eggs`;
+        details=`Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
       } else {
-        desc = `${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
-        details = `Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
-        if(l.feedTreatment) details += ` | 💊 Feed: ${l.feedTreatment}`;
-        if(l.waterTreatment) details += ` | 💊 Water: ${l.waterTreatment}`;
-        if(l.weight) details += ` | Weight: ${l.weight}kg (Wk ${l.weekNum||'—'})`;
-        details += ` | Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}`;
-        details += ` | Deaths: M:${l.dMale||0}, F:${l.dFemale||0}, W:${l.dWeaners||0}, K:${l.dKits||0}${l.cause?' ('+l.cause+')':''}`;
-        if(l.matingDate) details += ` | Mating: ${l.matingDate}`;
+        desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
+        details=`Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
+        if(l.feedTreatment) details+=` | 💊 Feed: ${l.feedTreatment}`;
+        if(l.waterTreatment) details+=` | 💊 Water: ${l.waterTreatment}`;
+        if(l.weight) details+=` | Weight: ${l.weight}kg (Wk ${l.weekNum||'—'})`;
+        details+=` | Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}`;
+        details+=` | Deaths: M:${l.dMale||0}, F:${l.dFemale||0}, W:${l.dWeaners||0}, K:${l.dKits||0}${l.cause?' ('+l.cause+')':''}`;
+        if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
       }
       return `<div class="timeline-item">
         <div class="t-dot ${l.deaths>0?'danger':''}"></div>
@@ -422,38 +390,35 @@ function updateOverview(){
         <div class="t-time"><div>${d}</div><div>${t}</div></div>
       </div>`;
     }).join('') || '<div class="empty-state">No recent farm activity.</div>';
-    document.getElementById('recentLogs').innerHTML = recentHtml;
+    document.getElementById('recentLogs').innerHTML=recentHtml;
   });
 }
 
 function filterGroup(id){ activeGroupFilter=id; updateOverview(); }
 
 function renderGroupView(groups, tl){
-  const target = activeGroupFilter==='all'?groups:groups.filter(g=>g.id===activeGroupFilter);
+  const target=activeGroupFilter==='all'?groups:groups.filter(g=>g.id===activeGroupFilter);
   if(!target.length){ document.getElementById('groupView').innerHTML='<div class="empty-state">No groups.</div>'; return; }
   let html='';
   target.forEach(g=>{
-    const gLogs = tl.filter(l=>l.groupId===g.id);
-    const chickenLogs = gLogs.filter(l=>l.farm==='chicken');
-    const rabbitLogs = gLogs.filter(l=>l.farm==='rabbit');
-    html += `<div style="margin-bottom:24px">
-      <div class="group-header">
-        <div><div class="group-header-name">${g.name}</div><div class="group-header-sub">${gLogs.length} entries today</div></div>
-        <div class="group-total-badge">${gLogs.length} logs</div>
-      </div>`;
+    const gLogs=tl.filter(l=>l.groupId===g.id);
+    const chickenLogs=gLogs.filter(l=>l.farm==='chicken');
+    const rabbitLogs=gLogs.filter(l=>l.farm==='rabbit');
+    html+=`<div style="margin-bottom:24px">
+      <div class="group-header"><div><div class="group-header-name">${g.name}</div><div class="group-header-sub">${gLogs.length} entries today</div></div><div class="group-total-badge">${gLogs.length} logs</div></div>`;
     if(chickenLogs.length){
-      html += `<div style="background:#fffbeb;border-radius:14px;padding:14px;margin-bottom:12px"><div style="font-weight:800;color:#d97706;margin-bottom:10px">🐔 Chicken</div>`;
+      html+=`<div style="background:#fffbeb;border-radius:14px;padding:14px;margin-bottom:12px"><div style="font-weight:800;color:#d97706;margin-bottom:10px">🐔 Chicken</div>`;
       chickenLogs.forEach(l=>{
-        html += `<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">Birds:${l.birds}, Eggs:${l.eggsGood}, Crates:${l.cratesSold}, Revenue:₦${fmt(l.cratesRevenue)}, Deaths:${l.deaths}</span></div>`;
+        html+=`<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">Birds:${l.birds}, Eggs:${l.eggsGood}, Crates:${l.cratesSold}, Revenue:₦${fmt(l.cratesRevenue)}, Deaths:${l.deaths}</span></div>`;
       });
-      html += `</div>`;
+      html+=`</div>`;
     } else {
-      html += `<div style="font-size:0.8rem;color:var(--slate);padding:6px 0 10px">No chicken entries today.</div>`;
+      html+=`<div style="font-size:0.8rem;color:var(--slate);padding:6px 0 10px">No chicken entries today.</div>`;
     }
     if(rabbitLogs.length){
-      html += `<div style="background:#fdf2f8;border-radius:14px;padding:14px"><div style="font-weight:800;color:#be185d;margin-bottom:10px">🐇 Rabbit</div>`;
+      html+=`<div style="background:#fdf2f8;border-radius:14px;padding:14px"><div style="font-weight:800;color:#be185d;margin-bottom:10px">🐇 Rabbit</div>`;
       rabbitLogs.forEach(l=>{
-        html += `<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">
+        html+=`<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">
           Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits} |
           Feed:${l.feedType||'—'} ${l.feedGrams}g, Water:${l.waterLitres}L |
           Litters:${l.litters}, New Kits:${l.newKits}, Sold:${l.rabbitsSold} |
@@ -461,13 +426,13 @@ function renderGroupView(groups, tl){
           ${l.matingDate?' | Mating:'+l.matingDate:''}
         </span></div>`;
       });
-      html += `</div>`;
+      html+=`</div>`;
     } else {
-      html += `<div style="font-size:0.8rem;color:var(--slate);padding:6px 0">No rabbit entries today.</div>`;
+      html+=`<div style="font-size:0.8rem;color:var(--slate);padding:6px 0">No rabbit entries today.</div>`;
     }
-    html += `</div>`;
+    html+=`</div>`;
   });
-  document.getElementById('groupView').innerHTML = html;
+  document.getElementById('groupView').innerHTML=html;
 }
 
 function stat(cls,num,label,wide){
@@ -476,129 +441,122 @@ function stat(cls,num,label,wide){
 }
 function totalItem(num,label){ return `<div class="total-item"><div class="total-num">${num}</div><div class="total-label">${label}</div></div>`; }
 
-// ── ANALYTICS (with per-group charts) ─────────────────
+// ── ANALYTICS ─────────────────────────────────────────
 function setRange(range){ activeRange=range; document.querySelectorAll('.range-tab').forEach(b=>b.classList.remove('active')); document.querySelector(`.range-tab[onclick="setRange('${range}')"]`).classList.add('active'); updateAnalytics(); }
 function setWaterRange(r){ waterRange=r; updateWaterChart(); }
 
 async function updateAnalytics(){
-  const logs = await getLogs();
-  const groups = await getGroups();
+  const logs=await getLogs();
   if(logs.length===0){ destroyAllCharts(); document.getElementById('weeklyKPI').innerHTML='<div class="empty-state">No data recorded yet.</div>'; return; }
-  const daysBack = RANGE_DAYS[activeRange]||7;
-  const startDate = new Date(); startDate.setDate(startDate.getDate()-daysBack); startDate.setHours(0,0,0,0);
-  const periodLogs = logs.filter(l => new Date(l.date) >= startDate);
-  const days = []; for(let i=daysBack-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toDateString()); }
+  const daysBack=RANGE_DAYS[activeRange]||7;
+  const startDate=new Date(); startDate.setDate(startDate.getDate()-daysBack); startDate.setHours(0,0,0,0);
+  const periodLogs=logs.filter(l=>new Date(l.date)>=startDate);
+  const days=[]; for(let i=daysBack-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toDateString()); }
 
-  // Overall egg production (always all groups)
-  const totalEggs = sum(periodLogs.filter(l=>l.farm==='chicken'),'eggsGood');
-  const totalRabbitsSold = sum(periodLogs.filter(l=>l.farm==='rabbit'),'rabbitsSold');
-  const totalDeathsC = sum(periodLogs.filter(l=>l.farm==='chicken'),'deaths');
-  const totalDeathsR = sum(periodLogs.filter(l=>l.farm==='rabbit'),'deaths');
-  const totalFeedKg = (sum(periodLogs,'feedGrams')/1000).toFixed(1);
-  const totalWater = sum(periodLogs,'waterLitres').toFixed(1);
-  document.getElementById('rangeLabel').textContent = activeRange==='1W'?'This Week':activeRange==='2W'?'Last 2 Weeks':activeRange==='1M'?'This Month':activeRange==='3M'?'Last 3 Months':activeRange==='6M'?'Last 6 Months':'This Year';
-  document.getElementById('weeklyKPI').innerHTML =
-    stat('green',totalEggs,'Total Eggs') +
-    stat('amber',totalRabbitsSold,'Rabbits Sold') +
-    stat('red',totalDeathsC+totalDeathsR,'Total Deaths') +
-    stat('blue',totalFeedKg+' kg','Feed') +
-    stat('blue',totalWater+' L','Water');
+  const totalEggs=sum(periodLogs.filter(l=>l.farm==='chicken'),'eggsGood');
+  const totalRabbitsSold=sum(periodLogs.filter(l=>l.farm==='rabbit'),'rabbitsSold');
+  const totalDeathsC=sum(periodLogs.filter(l=>l.farm==='chicken'),'deaths');
+  const totalDeathsR=sum(periodLogs.filter(l=>l.farm==='rabbit'),'deaths');
+  const totalFeedKg=(sum(periodLogs,'feedGrams')/1000).toFixed(1);
+  const totalWater=sum(periodLogs,'waterLitres').toFixed(1);
+  document.getElementById('rangeLabel').textContent=activeRange==='1W'?'This Week':activeRange==='2W'?'Last 2 Weeks':activeRange==='1M'?'This Month':activeRange==='3M'?'Last 3 Months':activeRange==='6M'?'Last 6 Months':'This Year';
+  document.getElementById('weeklyKPI').innerHTML=
+    stat('green',totalEggs,'Total Eggs')+stat('amber',totalRabbitsSold,'Rabbits Sold')+stat('red',totalDeathsC+totalDeathsR,'Total Deaths')+stat('blue',totalFeedKg+' kg','Feed')+stat('blue',totalWater+' L','Water');
 
-  const labelDays = days.map(d => new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  const labelDays=days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
 
-  // Egg production chart (global)
-  const eggData = days.map(day => sum(periodLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'eggsGood'));
-  const ctxEgg = document.getElementById('yieldChart').getContext('2d');
+  // Egg production global
+  const eggData=days.map(day=>sum(periodLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'eggsGood'));
+  const ctxEgg=document.getElementById('yieldChart').getContext('2d');
   if(charts.yield) charts.yield.destroy();
-  charts.yield = new Chart(ctxEgg,{
+  charts.yield=new Chart(ctxEgg,{
     type:'bar',
-    data:{ labels:labelDays, datasets:[{ label:'Good Eggs', data:eggData, backgroundColor:'#16a34a', borderRadius:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Eggs' } } } }
+    data:{labels:labelDays,datasets:[{label:'Good Eggs',data:eggData,backgroundColor:'#16a34a',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Eggs'}}}}
   });
 
-  // Filter logs for selected group (for all group-specific charts)
-  const groupLogs = analyticsGroup==='all' ? periodLogs : periodLogs.filter(l=>l.groupId===analyticsGroup);
+  // Filter group logs
+  const groupLogs=analyticsGroup==='all'?periodLogs:periodLogs.filter(l=>l.groupId===analyticsGroup);
 
-  // Mortality chart
-  const cDeathsData = days.map(day => sum(groupLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'deaths'));
-  const rDeathsData = days.map(day => sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'deaths'));
-  const ctxMort = document.getElementById('mortalityChart').getContext('2d');
+  // Mortality
+  const cDeathsData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'deaths'));
+  const rDeathsData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'deaths'));
+  const ctxMort=document.getElementById('mortalityChart').getContext('2d');
   if(charts.mortality) charts.mortality.destroy();
-  charts.mortality = new Chart(ctxMort,{
+  charts.mortality=new Chart(ctxMort,{
     type:'line',
-    data:{ labels:labelDays, datasets:[
-      { label:'Chicken Deaths', data:cDeathsData, borderColor:'#d97706', backgroundColor:'rgba(253,230,138,0.3)', tension:0.2, fill:true },
-      { label:'Rabbit Deaths', data:rDeathsData, borderColor:'#dc2626', backgroundColor:'rgba(254,202,202,0.3)', tension:0.2, fill:true }
+    data:{labels:labelDays,datasets:[
+      {label:'Chicken Deaths',data:cDeathsData,borderColor:'#d97706',backgroundColor:'rgba(253,230,138,0.3)',tension:0.2,fill:true},
+      {label:'Rabbit Deaths',data:rDeathsData,borderColor:'#dc2626',backgroundColor:'rgba(254,202,202,0.3)',tension:0.2,fill:true}
     ]},
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Deaths' } } } }
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'}}}}
   });
 
-  // Weight chart
-  const weightData = days.map(day => {
-    const w = groupLogs.filter(l=>l.farm==='rabbit' && new Date(l.date).toDateString()===day && l.weight!=null);
-    return w.length ? w[w.length-1].weight : null;
+  // Weight
+  const weightData=days.map(day=>{
+    const w=groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day&&l.weight!=null);
+    return w.length?w[w.length-1].weight:null;
   });
-  const ctxWeight = document.getElementById('weightChart').getContext('2d');
+  const ctxWeight=document.getElementById('weightChart').getContext('2d');
   if(charts.weight) charts.weight.destroy();
-  charts.weight = new Chart(ctxWeight,{
+  charts.weight=new Chart(ctxWeight,{
     type:'line',
-    data:{ labels:labelDays, datasets:[{ label:'Avg Weight (kg)', data:weightData, borderColor:'#0f2744', backgroundColor:'rgba(15,39,68,0.1)', tension:0.3, spanGaps:true, fill:true }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Weight (kg)' } } } }
+    data:{labels:labelDays,datasets:[{label:'Avg Weight (kg)',data:weightData,borderColor:'#0f2744',backgroundColor:'rgba(15,39,68,0.1)',tension:0.3,spanGaps:true,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Weight (kg)'}}}}
   });
 
-  // Rabbit sales chart
-  const salesData = days.map(day => sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'rabbitsSold'));
-  const ctxSales = document.getElementById('salesChart').getContext('2d');
+  // Rabbit sales
+  const salesData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'rabbitsSold'));
+  const ctxSales=document.getElementById('salesChart').getContext('2d');
   if(charts.sales) charts.sales.destroy();
-  charts.sales = new Chart(ctxSales,{
+  charts.sales=new Chart(ctxSales,{
     type:'bar',
-    data:{ labels:labelDays, datasets:[{ label:'Rabbits Sold', data:salesData, backgroundColor:'#be185d', borderRadius:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Sold' } } } }
+    data:{labels:labelDays,datasets:[{label:'Rabbits Sold',data:salesData,backgroundColor:'#be185d',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Sold'}}}}
   });
 
   updateWaterChart();
 }
 
 async function updateWaterChart(){
-  const logs = await getLogs();
-  const groups = await getGroups();
+  const logs=await getLogs();
   if(logs.length===0) return;
-  const now = new Date();
+  const now=new Date();
   let labels, waterData;
-  const filteredLogs = analyticsGroup==='all' ? logs : logs.filter(l=>l.groupId===analyticsGroup);
+  const filteredLogs=analyticsGroup==='all'?logs:logs.filter(l=>l.groupId===analyticsGroup);
 
   if(waterRange==='daily'){
-    const days=[]; for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toDateString()); }
-    labels = days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
-    waterData = days.map(day=>sum(filteredLogs.filter(l=>new Date(l.date).toDateString()===day),'waterLitres'));
+    const days=[]; for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toDateString());}
+    labels=days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+    waterData=days.map(day=>sum(filteredLogs.filter(l=>new Date(l.date).toDateString()===day),'waterLitres'));
   } else if(waterRange==='weekly'){
-    const weeks=[]; for(let i=7;i>=0;i--){ const s=new Date(now); s.setDate(s.getDate()-i*7-s.getDay()); const e=new Date(s); e.setDate(e.getDate()+6); weeks.push({start:s,end:e}); }
-    labels = weeks.map(w=>'Wk '+new Date(w.start).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
-    waterData = weeks.map(w=>sum(filteredLogs.filter(l=>new Date(l.date)>=w.start&&new Date(l.date)<=w.end),'waterLitres'));
+    const weeks=[]; for(let i=7;i>=0;i--){const s=new Date(now);s.setDate(s.getDate()-i*7-s.getDay());const e=new Date(s);e.setDate(e.getDate()+6);weeks.push({start:s,end:e});}
+    labels=weeks.map(w=>'Wk '+new Date(w.start).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+    waterData=weeks.map(w=>sum(filteredLogs.filter(l=>new Date(l.date)>=w.start&&new Date(l.date)<=w.end),'waterLitres'));
   } else if(waterRange==='monthly'){
-    const months=[]; for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); months.push(d); }
-    labels = months.map(m=>m.toLocaleDateString('en-US',{month:'short'}));
-    waterData = months.map(m=>sum(filteredLogs.filter(l=>new Date(l.date).getMonth()===m.getMonth()&&new Date(l.date).getFullYear()===m.getFullYear()),'waterLitres'));
+    const months=[]; for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d);}
+    labels=months.map(m=>m.toLocaleDateString('en-US',{month:'short'}));
+    waterData=months.map(m=>sum(filteredLogs.filter(l=>new Date(l.date).getMonth()===m.getMonth()&&new Date(l.date).getFullYear()===m.getFullYear()),'waterLitres'));
   } else if(waterRange==='yearly'){
-    const years=[]; for(let i=2;i>=0;i--){ years.push(now.getFullYear()-i); }
-    labels = years.map(y=>y.toString());
-    waterData = years.map(y=>sum(filteredLogs.filter(l=>new Date(l.date).getFullYear()===y),'waterLitres'));
+    const years=[]; for(let i=2;i>=0;i--){years.push(now.getFullYear()-i);}
+    labels=years.map(y=>y.toString());
+    waterData=years.map(y=>sum(filteredLogs.filter(l=>new Date(l.date).getFullYear()===y),'waterLitres'));
   }
 
-  const ctxWater = document.getElementById('waterChart').getContext('2d');
+  const ctxWater=document.getElementById('waterChart').getContext('2d');
   if(charts.water) charts.water.destroy();
-  charts.water = new Chart(ctxWater,{
+  charts.water=new Chart(ctxWater,{
     type:'bar',
-    data:{ labels, datasets:[{ label:'Water (L)', data:waterData, backgroundColor:'#16a34a', borderRadius:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, title:{ display:true, text:'Litres' } } } }
+    data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#16a34a',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'}}}}
   });
 }
 
 function destroyAllCharts(){
-  ['yield','mortality','weight','sales','water'].forEach(k=>{ if(charts[k]){ charts[k].destroy(); charts[k]=null; } });
+  ['yield','mortality','weight','sales','water'].forEach(k=>{if(charts[k]){charts[k].destroy();charts[k]=null;}});
 }
 
-// ── REPORTS (unchanged) ───────────────────────────────
+// ── REPORTS ──────────────────────────────────────────
 async function makeReport(type){
   const logs=await getLogs();
   const groups=await getGroups();
@@ -615,15 +573,10 @@ async function makeReport(type){
   const clogs=periodLogs.filter(l=>l.farm==='chicken');
   const rlogs=periodLogs.filter(l=>l.farm==='rabbit');
   let text='╔════════════════════════════════════╗\n║       OWNER DASHBOARD REPORT       ║\n╚════════════════════════════════════╝\n'+title+'\n\n';
-  text+='━━━━━━━━ CHICKEN FARM ━━━━━━━━\n';
-  text+=`Birds: ${sum(clogs,'birds')}\nGood Eggs: ${sum(clogs,'eggsGood')}\nCracked/Shelless/Broken: ${sum(clogs,'eggsCracked')}/${sum(clogs,'eggsShelless')}/${sum(clogs,'eggsBroken')}\nCrates: ${sum(clogs,'cratesSold')} | ₦${fmt(sum(clogs,'cratesRevenue'))}\nDeaths: ${sum(clogs,'deaths')}\n\n`;
-  text+='━━━━━━━━ RABBIT FARM ━━━━━━━━\n';
-  text+=`Males: ${sum(rlogs,'rMale')}\nFemales: ${sum(rlogs,'rFemale')}\nWeaners: ${sum(rlogs,'rWeaners')}\nKits: ${sum(rlogs,'rKits')}\nNew Litters/Kits: ${sum(rlogs,'litters')}/${sum(rlogs,'newKits')}\nSold: ${sum(rlogs,'rabbitsSold')}\n`;
-  text+=`Feed: ${sum(rlogs,'feedGrams')}g | Water: ${sum(rlogs,'waterLitres')}L\n`;
-  text+=`Mating: ${rlogs.filter(l=>l.matingDate).map(l=>l.matingDate).join(',')||'—'}\n`;
-  text+=`Deaths (M/F/W/K): ${sum(rlogs,'dMale')}/${sum(rlogs,'dFemale')}/${sum(rlogs,'dWeaners')}/${sum(rlogs,'dKits')}\n\n`;
+  text+='━━━━━━━━ CHICKEN FARM ━━━━━━━━\nBirds: '+sum(clogs,'birds')+'\nGood Eggs: '+sum(clogs,'eggsGood')+'\nCracked/Shelless/Broken: '+sum(clogs,'eggsCracked')+'/'+sum(clogs,'eggsShelless')+'/'+sum(clogs,'eggsBroken')+'\nCrates: '+sum(clogs,'cratesSold')+' | ₦'+fmt(sum(clogs,'cratesRevenue'))+'\nDeaths: '+sum(clogs,'deaths')+'\n\n';
+  text+='━━━━━━━━ RABBIT FARM ━━━━━━━━\nMales: '+sum(rlogs,'rMale')+'\nFemales: '+sum(rlogs,'rFemale')+'\nWeaners: '+sum(rlogs,'rWeaners')+'\nKits: '+sum(rlogs,'rKits')+'\nNew Litters/Kits: '+sum(rlogs,'litters')+'/'+sum(rlogs,'newKits')+'\nSold: '+sum(rlogs,'rabbitsSold')+'\nFeed: '+sum(rlogs,'feedGrams')+'g | Water: '+sum(rlogs,'waterLitres')+'L\nMating: '+rlogs.filter(l=>l.matingDate).map(l=>l.matingDate).join(',')||'—'+'\nDeaths (M/F/W/K): '+sum(rlogs,'dMale')+'/'+sum(rlogs,'dFemale')+'/'+sum(rlogs,'dWeaners')+'/'+sum(rlogs,'dKits')+'\n\n';
   text+='━━━━━━━━ BY GROUP ━━━━━━━━\n';
-  groups.forEach(g=>{ const gl=periodLogs.filter(l=>l.groupId===g.id); text+=`${g.name}: ${gl.length} entries\n`; });
+  groups.forEach(g=>{const gl=periodLogs.filter(l=>l.groupId===g.id);text+=`${g.name}: ${gl.length} entries\n`;});
   text+='\nGenerated: '+new Date().toLocaleString();
   document.getElementById('reportText').textContent=text;
   document.getElementById('reportBox').classList.remove('hidden');
@@ -642,7 +595,7 @@ function showTab(tab){
   document.querySelectorAll('.bottom-nav button').forEach((b,i)=>b.classList.toggle('active',['overview','groups','analytics','reports'][i]===tab));
   if(tab==='overview') updateOverview();
   if(tab==='groups') renderGroupManage();
-  if(tab==='analytics') { renderAnalyticsGroupTabs(); updateAnalytics(); }
+  if(tab==='analytics'){ renderAnalyticsGroupTabs(); updateAnalytics(); }
 }
 
 init();

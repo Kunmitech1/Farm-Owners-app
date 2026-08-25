@@ -7,84 +7,92 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.11.1/firebase-database-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--navy:#0f2744;--navy2:#1e3a5f;--green:#16a34a;--amber:#d97706;--rose:#be185d;--red:#dc2626;--slate:#64748b;--bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#0f172a;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
-.app{max-width:560px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:100px}
-.header{background:linear-gradient(135deg,var(--navy),var(--navy2));padding:24px 22px 18px;color:#fff}
-.header-top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-.header-icon{width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
-.header h1{font-size:1.2rem;font-weight:800}
-.header-date{font-size:0.8rem;opacity:0.75;margin-left:52px}
-.nav{display:flex;gap:6px;padding:10px 12px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-.nav button{flex:1;padding:9px 4px;border:none;border-radius:10px;background:var(--bg);color:var(--slate);font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s}
-.nav button.active{background:var(--navy);color:#fff}
-.card{background:var(--card);border-radius:20px;padding:20px;margin:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
-.section-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+:root{
+  --primary:#6366f1; --primary-light:#818cf8; --primary-dark:#4338ca;
+  --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --rose:#f43f5e;
+  --bg:#f8fafc; --card:#ffffff; --border:#e2e8f0; --text:#0f172a; --slate:#64748b;
+  --shadow:0 4px 12px rgba(0,0,0,0.06);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+.app{max-width:560px;margin:0 auto;background:var(--bg);min-height:100vh;padding-bottom:90px}
+.header{background:linear-gradient(135deg,#1e1b4b,#4338ca);padding:28px 24px;color:#fff}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.header-icon{width:48px;height:48px;background:rgba(255,255,255,0.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem}
+.header h1{font-size:1.3rem;font-weight:800;letter-spacing:-0.02em}
+.header-date{font-size:0.8rem;opacity:0.8;margin-left:60px}
+.nav{display:flex;gap:4px;padding:14px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.nav button{flex:1;padding:12px 4px;border:none;border-radius:12px;background:transparent;color:var(--slate);font-size:0.7rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.nav button.active{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+.card{background:var(--card);border-radius:20px;padding:22px;margin:16px 18px;box-shadow:var(--shadow)}
+.section-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stat-box{border-radius:16px;padding:16px 14px;text-align:center;border:1.5px solid var(--border)}
-.stat-box.green{background:#f0fdf4;border-color:#bbf7d0}
-.stat-box.amber{background:#fffbeb;border-color:#fde68a}
-.stat-box.rose{background:#fdf2f8;border-color:#fbcfe8}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat-box{border-radius:16px;padding:18px 14px;text-align:center;border:1.5px solid var(--border);transition:transform 0.2s}
+.stat-box:hover{transform:translateY(-2px)}
+.stat-box.green{background:#ecfdf5;border-color:#a7f3d0}
+.stat-box.amber{background:#fffbeb;border-color:#fcd34d}
+.stat-box.rose{background:#fff1f2;border-color:#fecdd3}
 .stat-box.red{background:#fef2f2;border-color:#fecaca}
 .stat-box.blue{background:#eff6ff;border-color:#bfdbfe}
-.stat-num{font-size:1.8rem;font-weight:900;line-height:1}
-.stat-box.green .stat-num{color:var(--green)}
-.stat-box.amber .stat-num{color:var(--amber)}
+.stat-num{font-size:2rem;font-weight:900;line-height:1}
+.stat-box.green .stat-num{color:var(--success)}
+.stat-box.amber .stat-num{color:var(--warning)}
 .stat-box.rose .stat-num{color:var(--rose)}
-.stat-box.red .stat-num{color:var(--red)}
-.stat-box.blue .stat-num{color:#2563eb}
-.stat-label{font-size:0.7rem;color:var(--slate);margin-top:6px;font-weight:600;line-height:1.3}
-.alert{padding:12px 16px;border-radius:12px;margin:12px 18px;font-size:0.84rem;font-weight:600;display:flex;align-items:flex-start;gap:10px}
-.alert-icon{font-size:1rem;flex-shrink:0;margin-top:2px}
-.alert.danger{background:#fef2f2;color:var(--red);border-left:4px solid var(--red)}
-.alert.warning{background:#fffbeb;color:#92400e;border-left:4px solid #f59e0b}
-.alert.success{background:#f0fdf4;color:#166534;border-left:4px solid var(--green)}
-.group-tabs,.range-tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
-.group-tab,.range-tab{padding:8px 18px;border-radius:24px;border:1.5px solid var(--border);background:var(--bg);font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;color:var(--slate)}
-.group-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.range-tab.active{background:var(--green);color:#fff;border-color:var(--green)}
+.stat-box.red .stat-num{color:var(--danger)}
+.stat-box.blue .stat-num{color:var(--primary)}
+.stat-label{font-size:0.7rem;color:var(--slate);margin-top:8px;font-weight:600;line-height:1.3}
+.alert{padding:14px 16px;border-radius:12px;margin:12px 18px;font-size:0.85rem;font-weight:600;display:flex;align-items:flex-start;gap:10px;box-shadow:var(--shadow)}
+.alert-icon{font-size:1.1rem;flex-shrink:0;margin-top:2px}
+.alert.danger{background:#fef2f2;color:var(--danger);border-left:5px solid var(--danger)}
+.alert.warning{background:#fffbeb;color:#92400e;border-left:5px solid var(--warning)}
+.alert.success{background:#ecfdf5;color:#065f46;border-left:5px solid var(--success)}
+.group-tabs,.range-tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.group-tab,.range-tab{padding:10px 18px;border-radius:24px;border:1.5px solid var(--border);background:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;color:var(--slate);transition:all 0.2s}
+.group-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 4px 10px rgba(99,102,241,0.3)}
+.range-tab.active{background:var(--success);color:#fff;border-color:var(--success)}
 .data-row{display:flex;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);gap:12px}
 .worker-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
-.avatar-sm{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:800;flex-shrink:0}
+.avatar-sm{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:800;flex-shrink:0}
 .worker-info{flex:1}
 .worker-name{font-weight:700;font-size:0.9rem}
 .worker-meta{font-size:0.73rem;color:var(--slate);margin-top:2px}
-.remove-btn{background:#fef2f2;color:var(--red);border:none;padding:8px 14px;border-radius:10px;font-size:0.74rem;font-weight:700;cursor:pointer}
-.form-group{margin-bottom:18px}
-.form-label{display:block;font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--text)}
-.form-input,select.form-input{width:100%;padding:15px 16px;border:2px solid var(--border);border-radius:12px;font-size:0.95rem;font-family:inherit;background:#fff}
-.form-input:focus,select.form-input:focus{outline:none;border-color:var(--navy)}
+.remove-btn{background:#fee2e2;color:var(--danger);border:none;padding:8px 14px;border-radius:10px;font-size:0.74rem;font-weight:700;cursor:pointer;transition:opacity 0.2s}
+.remove-btn:hover{opacity:0.8}
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-size:0.85rem;font-weight:700;margin-bottom:6px;color:var(--text)}
+.form-input,select.form-input{width:100%;padding:16px 16px;border:2px solid var(--border);border-radius:12px;font-size:1rem;font-family:inherit;background:#fff;transition:border-color 0.2s}
+.form-input:focus,select.form-input:focus{outline:none;border-color:var(--primary)}
 .add-row{display:flex;gap:10px;align-items:flex-end}
 .add-row .form-input{flex:1}
-.btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:10px;transition:opacity 0.2s}
-.btn:active{opacity:0.85}
-.btn-primary{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff}
+.btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;margin-top:10px;transition:all 0.2s}
+.btn:active{transform:scale(0.98)}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 4px 14px rgba(99,102,241,0.4)}
 .btn-secondary{background:#fff;color:var(--text);border:2px solid var(--border)}
 .btn-sm{width:auto;padding:10px 20px;margin-top:0}
-.report-box{background:#f8fafc;border:1px dashed var(--border);border-radius:12px;padding:18px;font-family:'Courier New',monospace;font-size:0.75rem;white-space:pre-wrap;max-height:340px;overflow-y:auto;line-height:1.7}
+.report-box{background:#f8fafc;border:1px dashed var(--border);border-radius:12px;padding:18px;font-family:'Courier New',monospace;font-size:0.78rem;white-space:pre-wrap;max-height:340px;overflow-y:auto;line-height:1.7}
 .timeline-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);align-items:flex-start}
-.t-dot{width:10px;height:10px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0}
-.t-dot.danger{background:var(--red)}
+.t-dot{width:12px;height:12px;border-radius:50%;background:var(--success);margin-top:6px;flex-shrink:0;box-shadow:0 0 6px rgba(16,185,129,0.5)}
+.t-dot.danger{background:var(--danger);box-shadow:0 0 6px rgba(239,68,68,0.5)}
 .t-body{flex:1}
 .t-title{font-weight:700;font-size:0.88rem;line-height:1.4}
-.t-desc{font-size:0.76rem;color:var(--slate);margin-top:3px;line-height:1.4}
+.t-desc{font-size:0.76rem;color:var(--slate);margin-top:4px;line-height:1.4}
 .t-time{font-size:0.7rem;color:var(--slate);white-space:nowrap;text-align:right;line-height:1.4}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:#fff;border-top:1px solid var(--border);display:flex;padding:8px 0 20px;z-index:200;box-shadow:0 -2px 8px rgba(0,0,0,0.06)}
-.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;color:var(--slate);font-size:0.62rem;font-weight:600;cursor:pointer;padding:4px 0}
-.bottom-nav button.active{color:var(--navy)}
-.nav-icon{font-size:1.2rem;line-height:1}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;background:#fff;border-top:1px solid var(--border);display:flex;padding:10px 8px 20px;z-index:200;box-shadow:0 -2px 10px rgba(0,0,0,0.06)}
+.bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border:none;background:none;color:var(--slate);font-size:0.62rem;font-weight:600;cursor:pointer;padding:6px 0;border-radius:12px;transition:all 0.2s}
+.bottom-nav button.active{color:var(--primary);background:rgba(99,102,241,0.08)}
+.nav-icon{font-size:1.4rem;line-height:1}
 .hidden{display:none !important}
 .empty-state{text-align:center;padding:40px 20px;color:var(--slate);font-size:0.9rem}
 .chart-container{margin:24px 0;position:relative;height:220px;width:100%}
-.group-header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.totals-card{background:linear-gradient(135deg,#0f2744,#1e3a5f);border-radius:20px;padding:20px;margin:16px 18px;color:#fff}
-.totals-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.total-item{text-align:center;background:rgba(255,255,255,0.1);border-radius:12px;padding:12px 8px}
-.total-num{font-size:1.4rem;font-weight:900;line-height:1}
-.total-label{font-size:0.65rem;opacity:0.75;margin-top:4px;font-weight:600;line-height:1.2}
+.group-header{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border-radius:14px;padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.totals-card{background:linear-gradient(135deg,var(--primary-dark),var(--primary));border-radius:20px;padding:24px;margin:16px 18px;color:#fff;box-shadow:0 8px 24px rgba(99,102,241,0.3)}
+.totals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.total-item{text-align:center;background:rgba(255,255,255,0.15);border-radius:12px;padding:14px 8px;backdrop-filter:blur(4px)}
+.total-num{font-size:1.5rem;font-weight:900;line-height:1}
+.total-label{font-size:0.68rem;opacity:0.8;margin-top:6px;font-weight:600;line-height:1.2}
 </style>
 </head>
 <body>
@@ -107,7 +115,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="tab-overview">
   <div id="dashAlerts"></div>
   <div class="totals-card"><div class="totals-title">📊 All Groups Combined — Today</div><div class="totals-grid" id="combinedTotals"></div></div>
-  <div class="card"><div class="section-label">🐔 Chicken Farm — Today</div><div class="stat-grid" id="chickenStats"></div></div>
   <div class="card"><div class="section-label">🐇 Rabbit Farm — Today</div><div class="stat-grid" id="rabbitStats"></div></div>
   <div class="card"><div class="section-label">👥 By Group</div><div class="group-tabs" id="groupFilterTabs"></div><div id="groupView"></div></div>
 </div>
@@ -140,7 +147,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <button class="range-tab" onclick="setRange('1Y')">1Y</button>
     </div>
   </div>
-  <div class="card"><div class="section-label">🥚 Total Egg Production (All Groups)</div><div class="chart-container"><canvas id="yieldChart"></canvas></div></div>
   <div class="card"><div class="section-label">💀 Mortality Trend</div><div class="group-tabs" id="mortalityGroupTabs"></div><div class="chart-container"><canvas id="mortalityChart"></canvas></div></div>
   <div class="card"><div class="section-label">⚖️ Average Rabbit Weight</div><div class="group-tabs" id="weightGroupTabs"></div><div class="chart-container"><canvas id="weightChart"></canvas></div></div>
   <div class="card"><div class="section-label">💰 Rabbit Sales</div><div class="group-tabs" id="salesGroupTabs"></div><div class="chart-container"><canvas id="salesChart"></canvas></div></div>
@@ -166,12 +172,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="tab-reports" class="hidden">
   <div class="card">
     <div class="section-label">📋 Generate Report</div>
-    <div class="form-group">
-      <div class="form-label">Select Date</div>
-      <input type="date" class="form-input" id="reportDate">
-    </div>
-    <button class="btn btn-primary" onclick="makeReport('daily', document.getElementById('reportDate').value)">📄 Daily Report for Selected Date</button>
-    <button class="btn btn-primary" style="margin-top:10px" onclick="makeReport('weekly')">📊 7-Day Report (Ending Today)</button>
+    <button class="btn btn-primary" onclick="makeReport('daily')">📄 Today's Full Report</button>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="makeReport('weekly')">📊 7-Day Report</button>
   </div>
   <div id="reportBox" class="hidden">
     <div class="card">
@@ -195,16 +197,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// FIREBASE CONFIG – REPLACE WITH YOUR ACTUAL CONFIG
+// FIREBASE CONFIG – RABBIT-ONLY DASHBOARD
 // ═══════════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyCI3Nzg_kLqmlWU8H3Qt1-5IHMGxc2Vp3k",
-  authDomain: "farm-appp-4f7f6.firebaseapp.com",
-  databaseURL: "https://farm-appp-4f7f6-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "farm-appp-4f7f6",
-  storageBucket: "farm-appp-4f7f6.firebasestorage.app",
-  messagingSenderId: "637677324102",
-  appId: "1:637677324102:web:f564617ac59012909c0747"
+  apiKey: "AIzaSyBt8N19GkL1AK4XoIL2gm65_qJkyVk6HFY",
+  authDomain: "mr-iyanus-ting.firebaseapp.com",
+  databaseURL: "https://mr-iyanus-ting-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "mr-iyanus-ting",
+  storageBucket: "mr-iyanus-ting.firebasestorage.app",
+  messagingSenderId: "484744386869",
+  appId: "1:484744386869:web:8d259af2ed99101e56547c"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -227,9 +229,6 @@ function init(){
   document.getElementById('headerDate').textContent=
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 
-  // Set default date for report picker
-  document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
-
   db.ref('logs').on('value', snap => {
     updateOverview();
     if (!document.getElementById('tab-activity').classList.contains('hidden')) renderRecentActivity();
@@ -250,13 +249,6 @@ function init(){
   renderGroupManage();
   renderAnalyticsGroupTabs();
   renderRecentActivity();
-
-  // Auto-open reports tab if URL has ?tab=reports
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('tab') === 'reports') {
-    showTab('reports');
-    makeReport('daily');
-  }
 }
 
 // ── data access ──────────────────────────────────────
@@ -330,35 +322,28 @@ function setAnalyticsGroup(id){
   if(!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
 }
 
-// ── RECENT ACTIVITY (separate tab) ───────────────────
+// ── RECENT ACTIVITY ───────────────────────────────────
 function renderRecentActivity(){
   Promise.all([getLogs(),getGroups()]).then(([logs,groups])=>{
-    let recentHtml=logs.slice().reverse().filter(l=>groups.some(g=>g.id===l.groupId)).slice(0,20).map(l=>{
+    let recentHtml=logs.slice().reverse().filter(l=>l.farm==='rabbit' && groups.some(g=>g.id===l.groupId)).slice(0,20).map(l=>{
       const t=new Date(l.date).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
       const d=new Date(l.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
       const grpName=groups.find(g=>g.id===l.groupId)?.name||'Unknown';
       const worker=l.workerName||'Worker';
-      const farmEmoji=l.farm==='chicken'?'🐔':'🐇';
       let desc='',details='';
-      if(l.farm==='chicken'){
-        desc=`${worker} — ${l.birds||0} birds, ${l.eggsGood||0} good eggs`;
-        details=`Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
-      } else {
-        desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
-        details=`Bought: M:${l.boughtAdultMale||0}, F:${l.boughtAdultFemale||0}, W:${l.boughtWeaners||0}, K:${l.boughtKits||0} | Feed: ${l.feedType||'—'} ${l.feedGrams||0}g, Water: ${l.waterLitres||0}L`;
-        if(l.feedTreatment) details+=` | 💊 Feed: ${l.feedTreatment}`;
-        if(l.waterTreatment) details+=` | 💊 Water: ${l.waterTreatment}`;
-        if(l.weight) details+=` | Weight: ${l.weight}kg (Wk ${l.weekNum||'—'})`;
-        details+=` | Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}`;
-        details+=` | Deaths: M:${l.dMale||0}, F:${l.dFemale||0}, W:${l.dWeaners||0}, K:${l.dKits||0}${l.cause?' ('+l.cause+')':''}`;
-        if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
-      }
+      desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
+      details=`Bought: M:${l.boughtAdultMale||0}, F:${l.boughtAdultFemale||0}, W:${l.boughtWeaners||0}, K:${l.boughtKits||0} | Feed: ${l.feedType||'—'} | Water: ${l.waterLitres||0}L (${l.waterTreatment||'No treatment'})`;
+      if(l.feedControl) details+=` | Feed Control:${l.feedControl}g, T1:${l.feedTreatment1||0}g, T2:${l.feedTreatment2||0}g, T3:${l.feedTreatment3||0}g, T4:${l.feedTreatment4||0}g`;
+      if(l.weightControl) details+=` | Weight: Control:${l.weightControl||0}kg, T1:${l.weightTreatment1||0}kg, T2:${l.weightTreatment2||0}kg, T3:${l.weightTreatment3||0}kg, T4:${l.weightTreatment4||0}kg`;
+      details+=` | Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}`;
+      details+=` | Deaths: M:${l.dMale||0}, F:${l.dFemale||0}, W:${l.dWeaners||0}, K:${l.dKits||0}${l.cause?' ('+l.cause+')':''}`;
+      if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
       return `<div class="timeline-item">
         <div class="t-dot ${l.deaths>0?'danger':''}"></div>
-        <div class="t-body"><div class="t-title">${farmEmoji} ${desc}</div><div class="t-desc">${details}</div><div style="font-size:0.7rem;color:var(--slate);margin-top:2px">${grpName}</div></div>
+        <div class="t-body"><div class="t-title">🐇 ${desc}</div><div class="t-desc">${details}</div><div style="font-size:0.7rem;color:var(--slate);margin-top:2px">${grpName}</div></div>
         <div class="t-time"><div>${d}</div><div>${t}</div></div>
       </div>`;
-    }).join('') || '<div class="empty-state">No recent farm activity.</div>';
+    }).join('') || '<div class="empty-state">No recent rabbit farm activity.</div>';
     document.getElementById('recentLogs').innerHTML=recentHtml;
   });
 }
@@ -366,39 +351,20 @@ function renderRecentActivity(){
 // ── OVERVIEW with validation ──────────────────────────
 function updateOverview(){
   Promise.all([getLogs(),getGroups(),getWorkers()]).then(([logs,groups,workers])=>{
-    const tl=logs.filter(l=>new Date(l.date).toDateString()===todayStr());
-    const clogs=tl.filter(l=>l.farm==='chicken');
-    const rlogs=tl.filter(l=>l.farm==='rabbit');
+    const tl=logs.filter(l=>new Date(l.date).toDateString()===todayStr() && l.farm==='rabbit');
+    const rlogs=tl;
 
-    const cBirds=sum(clogs,'birds'), cGood=sum(clogs,'eggsGood'), cCrates=sum(clogs,'cratesSold'), cRevenue=sum(clogs,'cratesRevenue'), cDeaths=sum(clogs,'deaths');
     const rMale=sum(rlogs,'rMale'), rFemale=sum(rlogs,'rFemale'), rWeaners=sum(rlogs,'rWeaners'), rKits=sum(rlogs,'rKits'), rSold=sum(rlogs,'rabbitsSold'), rDeaths=sum(rlogs,'deaths'), rNewKits=sum(rlogs,'newKits');
 
-    document.getElementById('chickenStats').innerHTML=
-      stat('amber',cBirds,'Birds Met')+stat('green',cGood,'Good Eggs')+stat('',cCrates,'Crates Sold')+stat('','₦'+fmt(cRevenue),'Revenue')+stat(cDeaths>0?'red':'','Deaths: '+cDeaths,'',true);
     document.getElementById('rabbitStats').innerHTML=
       stat('rose',rMale,'Males')+stat('rose',rFemale,'Females')+stat('rose',rWeaners,'Weaners')+stat('rose',rKits,'Kits')+stat('green',rNewKits,'New Kits')+stat('',rSold,'Sold Today')+stat(rDeaths>0?'red':'','Deaths: '+rDeaths,'',true);
 
     document.getElementById('combinedTotals').innerHTML=
-      totalItem(cBirds,'🐔 Birds')+totalItem(cGood,'🥚 Eggs')+totalItem(cCrates,'📦 Crates')+
-      totalItem(rMale+rFemale+rWeaners+rKits,'🐇 Rabbits')+totalItem(rNewKits,'🐣 Kits')+totalItem(rDeaths+cDeaths,'💀 Deaths');
+      totalItem(rMale+rFemale+rWeaners+rKits,'🐇 Rabbits')+totalItem(rNewKits,'🐣 Kits')+totalItem(rSold,'💰 Sold')+totalItem(rDeaths,'💀 Deaths');
 
-    // Stock validation per group
     let alerts='';
     groups.forEach(g=>{
-      const chickenLogs=logs.filter(l=>l.farm==='chicken'&&l.groupId===g.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
       const rabbitLogs=logs.filter(l=>l.farm==='rabbit'&&l.groupId===g.id).sort((a,b)=>new Date(a.date)-new Date(b.date));
-      if(chickenLogs.length>0){
-        let base=chickenLogs[0].birds;
-        let expected=base;
-        let mismatch=false;
-        chickenLogs.forEach(l=>{
-          expected=expected-(l.deaths||0);
-          if(l.birds!==expected) mismatch=true;
-        });
-        if(mismatch){
-          alerts+=`<div class="alert danger"><span class="alert-icon">🚨</span>Group ${g.name} chicken stock mismatch. Base: ${base}, expected now: ${expected}. Check entries.</div>`;
-        }
-      }
       if(rabbitLogs.length>0){
         let base=rabbitLogs[0].rMale+rabbitLogs[0].rFemale+rabbitLogs[0].rWeaners+rabbitLogs[0].rKits;
         let expected=base;
@@ -433,26 +399,18 @@ function renderGroupView(groups, tl){
   let html='';
   target.forEach(g=>{
     const gLogs=tl.filter(l=>l.groupId===g.id);
-    const chickenLogs=gLogs.filter(l=>l.farm==='chicken');
-    const rabbitLogs=gLogs.filter(l=>l.farm==='rabbit');
+    const rabbitLogs=gLogs;
     html+=`<div style="margin-bottom:24px">
       <div class="group-header"><div><div class="group-header-name">${g.name}</div><div class="group-header-sub">${gLogs.length} entries today</div></div><div class="group-total-badge">${gLogs.length} logs</div></div>`;
-    if(chickenLogs.length){
-      html+=`<div style="background:#fffbeb;border-radius:14px;padding:14px;margin-bottom:12px"><div style="font-weight:800;color:#d97706;margin-bottom:10px">🐔 Chicken</div>`;
-      chickenLogs.forEach(l=>{
-        html+=`<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">Birds:${l.birds}, Eggs:${l.eggsGood}, Crates:${l.cratesSold}, Revenue:₦${fmt(l.cratesRevenue)}, Deaths:${l.deaths}</span></div>`;
-      });
-      html+=`</div>`;
-    } else {
-      html+=`<div style="font-size:0.8rem;color:var(--slate);padding:6px 0 10px">No chicken entries today.</div>`;
-    }
     if(rabbitLogs.length){
-      html+=`<div style="background:#fdf2f8;border-radius:14px;padding:14px"><div style="font-weight:800;color:#be185d;margin-bottom:10px">🐇 Rabbit</div>`;
+      html+=`<div style="background:#fff1f2;border-radius:14px;padding:14px"><div style="font-weight:800;color:#be185d;margin-bottom:10px">🐇 Rabbit</div>`;
       rabbitLogs.forEach(l=>{
         html+=`<div class="data-row"><span class="data-row-label">${l.workerName}</span><span class="data-row-val">
           Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits} |
           Bought: M:${l.boughtAdultMale||0}, F:${l.boughtAdultFemale||0}, W:${l.boughtWeaners||0}, K:${l.boughtKits||0} |
-          Feed:${l.feedType||'—'} ${l.feedGrams}g, Water:${l.waterLitres}L |
+          Feed:${l.feedType||'—'} | Water:${l.waterLitres}L (${l.waterTreatment||'No treatment'}) |
+          Feed per treatment: C:${l.feedControl||0}g, T1:${l.feedTreatment1||0}g, T2:${l.feedTreatment2||0}g, T3:${l.feedTreatment3||0}g, T4:${l.feedTreatment4||0}g |
+          Weight: C:${l.weightControl||0}kg, T1:${l.weightTreatment1||0}kg, T2:${l.weightTreatment2||0}kg, T3:${l.weightTreatment3||0}kg, T4:${l.weightTreatment4||0}kg |
           Litters:${l.litters}, New Kits:${l.newKits}, Sold:${l.rabbitsSold} |
           Deaths: M:${l.dMale}, F:${l.dFemale}, W:${l.dWeaners}, K:${l.dKits}
           ${l.matingDate?' | Mating:'+l.matingDate:''}
@@ -482,68 +440,52 @@ async function updateAnalytics(){
   if(logs.length===0){ destroyAllCharts(); document.getElementById('weeklyKPI').innerHTML='<div class="empty-state">No data recorded yet.</div>'; return; }
   const daysBack=RANGE_DAYS[activeRange]||7;
   const startDate=new Date(); startDate.setDate(startDate.getDate()-daysBack); startDate.setHours(0,0,0,0);
-  const periodLogs=logs.filter(l=>new Date(l.date)>=startDate);
+  const periodLogs=logs.filter(l=>new Date(l.date)>=startDate && l.farm==='rabbit');
   const days=[]; for(let i=daysBack-1;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toDateString()); }
 
-  const totalEggs=sum(periodLogs.filter(l=>l.farm==='chicken'),'eggsGood');
-  const totalRabbitsSold=sum(periodLogs.filter(l=>l.farm==='rabbit'),'rabbitsSold');
-  const totalDeathsC=sum(periodLogs.filter(l=>l.farm==='chicken'),'deaths');
-  const totalDeathsR=sum(periodLogs.filter(l=>l.farm==='rabbit'),'deaths');
+  const totalRabbitsSold=sum(periodLogs,'rabbitsSold');
+  const totalDeathsR=sum(periodLogs,'deaths');
   const totalFeedKg=(sum(periodLogs,'feedGrams')/1000).toFixed(1);
   const totalWater=sum(periodLogs,'waterLitres').toFixed(0);
+  const totalNewKits=sum(periodLogs,'newKits');
   document.getElementById('rangeLabel').textContent=activeRange==='1W'?'This Week':activeRange==='2W'?'Last 2 Weeks':activeRange==='1M'?'This Month':activeRange==='3M'?'Last 3 Months':activeRange==='6M'?'Last 6 Months':'This Year';
   document.getElementById('weeklyKPI').innerHTML=
-    stat('green',totalEggs,'Total Eggs')+stat('amber',totalRabbitsSold,'Rabbits Sold')+stat('red',totalDeathsC+totalDeathsR,'Total Deaths')+stat('blue',totalFeedKg+' kg','Feed')+stat('blue',totalWater+' L','Water');
+    stat('green',totalNewKits,'New Kits')+stat('amber',totalRabbitsSold,'Rabbits Sold')+stat('red',totalDeathsR,'Total Deaths')+stat('blue',totalFeedKg+' kg','Feed')+stat('blue',totalWater+' L','Water');
 
   const labelDays=days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
 
-  // Egg production global
-  const eggData=days.map(day=>sum(periodLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'eggsGood'));
-  const ctxEgg=document.getElementById('yieldChart').getContext('2d');
-  if(charts.yield) charts.yield.destroy();
-  charts.yield=new Chart(ctxEgg,{
-    type:'bar',
-    data:{labels:labelDays,datasets:[{label:'Good Eggs',data:eggData,backgroundColor:'#16a34a',borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Eggs'},ticks:{precision:0}}}}
-  });
-
-  // Group filter
   const groupLogs=analyticsGroup==='all'?periodLogs:periodLogs.filter(l=>l.groupId===analyticsGroup);
 
   // Mortality
-  const cDeathsData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'deaths'));
-  const rDeathsData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'deaths'));
+  const rDeathsData=days.map(day=>sum(groupLogs.filter(l=>new Date(l.date).toDateString()===day),'deaths'));
   const ctxMort=document.getElementById('mortalityChart').getContext('2d');
   if(charts.mortality) charts.mortality.destroy();
   charts.mortality=new Chart(ctxMort,{
     type:'line',
-    data:{labels:labelDays,datasets:[
-      {label:'Chicken Deaths',data:cDeathsData,borderColor:'#d97706',backgroundColor:'rgba(253,230,138,0.3)',tension:0.2,fill:true},
-      {label:'Rabbit Deaths',data:rDeathsData,borderColor:'#dc2626',backgroundColor:'rgba(254,202,202,0.3)',tension:0.2,fill:true}
-    ]},
+    data:{labels:labelDays,datasets:[{label:'Rabbit Deaths',data:rDeathsData,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.3)',tension:0.2,fill:true}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'},ticks:{precision:0}}}}
   });
 
   // Weight
   const weightData=days.map(day=>{
-    const w=groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day&&l.weight!=null);
-    return w.length?w[w.length-1].weight:null;
+    const w=groupLogs.filter(l=>new Date(l.date).toDateString()===day&&l.weightControl!=null);
+    return w.length?w[w.length-1].weightControl:null;
   });
   const ctxWeight=document.getElementById('weightChart').getContext('2d');
   if(charts.weight) charts.weight.destroy();
   charts.weight=new Chart(ctxWeight,{
     type:'line',
-    data:{labels:labelDays,datasets:[{label:'Avg Weight (kg)',data:weightData,borderColor:'#0f2744',backgroundColor:'rgba(15,39,68,0.1)',tension:0.3,spanGaps:true,fill:true}]},
+    data:{labels:labelDays,datasets:[{label:'Avg Weight (kg)',data:weightData,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',tension:0.3,spanGaps:true,fill:true}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Weight (kg)'}}}}
   });
 
   // Rabbit sales
-  const salesData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'rabbitsSold'));
+  const salesData=days.map(day=>sum(groupLogs.filter(l=>new Date(l.date).toDateString()===day),'rabbitsSold'));
   const ctxSales=document.getElementById('salesChart').getContext('2d');
   if(charts.sales) charts.sales.destroy();
   charts.sales=new Chart(ctxSales,{
     type:'bar',
-    data:{labels:labelDays,datasets:[{label:'Rabbits Sold',data:salesData,backgroundColor:'#be185d',borderRadius:6}]},
+    data:{labels:labelDays,datasets:[{label:'Rabbits Sold',data:salesData,backgroundColor:'#ec4899',borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Sold'},ticks:{precision:0}}}}
   });
 
@@ -555,7 +497,7 @@ async function updateWaterChart(){
   if(logs.length===0) return;
   const now=new Date();
   let labels, waterData;
-  const filteredLogs=analyticsGroup==='all'?logs:logs.filter(l=>l.groupId===analyticsGroup);
+  const filteredLogs=analyticsGroup==='all'?logs:logs.filter(l=>l.groupId===analyticsGroup && l.farm==='rabbit');
 
   if(waterRange==='daily'){
     const days=[]; for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toDateString());}
@@ -579,7 +521,7 @@ async function updateWaterChart(){
   if(charts.water) charts.water.destroy();
   charts.water=new Chart(ctxWater,{
     type:'bar',
-    data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#16a34a',borderRadius:6}]},
+    data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#06b6d4',borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'},ticks:{precision:0}}}}
   });
 }
@@ -588,68 +530,53 @@ function destroyAllCharts(){
   ['yield','mortality','weight','sales','water'].forEach(k=>{if(charts[k]){charts[k].destroy();charts[k]=null;}});
 }
 
-// ── REPORTS (with date selection and print) ──────────
-async function makeReport(type, specificDate = null) {
+// ── REPORTS ──────────────────────────────────────────
+async function makeReport(type){
   lastReportType = type;
-  const logs = await getLogs();
-  const groups = await getGroups();
-  const today = new Date();
+  const logs=await getLogs();
+  const groups=await getGroups();
+  const today=new Date();
   let periodLogs, title;
-
-  if (type === 'daily') {
-    if (specificDate) {
-      const selected = new Date(specificDate);
-      periodLogs = logs.filter(l => new Date(l.date).toDateString() === selected.toDateString());
-      title = 'DAILY REPORT — ' + selected.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    } else {
-      periodLogs = logs.filter(l => new Date(l.date).toDateString() === today.toDateString());
-      title = 'DAILY REPORT — ' + today.toLocaleDateString();
-    }
+  if(type==='daily'){
+    periodLogs=logs.filter(l=>new Date(l.date).toDateString()===today.toDateString() && l.farm==='rabbit');
+    title='DAILY RABBIT REPORT — '+today.toLocaleDateString();
   } else {
-    const wa = new Date();
-    wa.setDate(wa.getDate() - 7);
-    periodLogs = logs.filter(l => new Date(l.date) >= wa);
-    title = '7-DAY REPORT — ending ' + today.toLocaleDateString();
+    const wa=new Date(); wa.setDate(wa.getDate()-7);
+    periodLogs=logs.filter(l=>new Date(l.date)>=wa && l.farm==='rabbit');
+    title='7-DAY RABBIT REPORT — ending '+today.toLocaleDateString();
   }
 
-  const clogs = periodLogs.filter(l => l.farm === 'chicken');
-  const rlogs = periodLogs.filter(l => l.farm === 'rabbit');
-  let text = '╔════════════════════════════════════╗\n║       OWNER DASHBOARD REPORT       ║\n╚════════════════════════════════════╝\n' + title + '\n\n';
+  let text = '╔════════════════════════════════════╗\n';
+  text += '║       OWNER DASHBOARD REPORT       ║\n';
+  text += '╚════════════════════════════════════╝\n' + title + '\n\n';
   text += '━━━━━━━━ OVERALL SUMMARY ━━━━━━━━\n';
-  text += `Total Chicken Entries: ${clogs.length}\nTotal Rabbit Entries: ${rlogs.length}\n\n`;
+  const rlogs = periodLogs;
+  text += `Total Rabbit Entries: ${rlogs.length}\n\n`;
 
   groups.forEach(g => {
-    const gLogs = periodLogs.filter(l => l.groupId === g.id);
-    if (gLogs.length === 0) return;
-    const gClogs = gLogs.filter(l => l.farm === 'chicken');
-    const gRlogs = gLogs.filter(l => l.farm === 'rabbit');
+    const gLogs = periodLogs.filter(l=>l.groupId===g.id);
+    if(gLogs.length === 0) return;
+    const gRlogs = gLogs;
 
     text += `━━━━━━━━ GROUP: ${g.name} ━━━━━━━━\n`;
-
-    if (gClogs.length) {
-      text += '  ── CHICKEN ──\n';
-      gClogs.forEach(l => {
-        text += `    ${l.workerName}: ${l.birds} birds, ${l.eggsGood} good eggs, ${l.eggsCracked}/${l.eggsShelless}/${l.eggsBroken} (cracked/shelless/broken), ${l.cratesSold} crates, ₦${fmt(l.cratesRevenue)}, ${l.deaths} deaths${l.cause ? ' (' + l.cause + ')' : ''}\n`;
-      });
-      text += `    Totals — Birds: ${sum(gClogs, 'birds')}, Eggs: ${sum(gClogs, 'eggsGood')}, Crates: ${sum(gClogs, 'cratesSold')}, Revenue: ₦${fmt(sum(gClogs, 'cratesRevenue'))}, Deaths: ${sum(gClogs, 'deaths')}\n\n`;
-    }
-
-    if (gRlogs.length) {
-      text += '  ── RABBIT ──\n';
-      gRlogs.forEach(l => {
-        text += `    ${l.workerName}: Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits}\n`;
-        text += `      Bought: AdultM:${l.boughtAdultMale || 0}, AdultF:${l.boughtAdultFemale || 0}, Weaners:${l.boughtWeaners || 0}, Kits:${l.boughtKits || 0}\n`;
-        text += `      Feed: ${l.feedType || '—'} ${l.feedGrams}g, Water: ${l.waterLitres}L\n`;
-        if (l.weight) text += `      Weight: ${l.weight}kg (Week ${l.weekNum || '—'})\n`;
-        if (l.matingDate) text += `      Mating Date: ${l.matingDate}, Rabbits Mated: ${l.rabbitsMated || 0}, EDD: ${l.edd || '—'}, Delivery: ${l.deliveryDate || '—'}, Expected: ${l.expectedAtBirth || 0}\n`;
-        text += `      Litters: ${l.litters}, New Kits: ${l.newKits}, Sold: ${l.rabbitsSold}\n`;
-        text += `      Deaths: Male:${l.dMale}, Female:${l.dFemale}, Weaner:${l.dWeaners}, Kit:${l.dKits}${l.cause ? ' (' + l.cause + ')' : ''}\n`;
-      });
-      text += `    Totals — Males: ${sum(gRlogs, 'rMale')}, Females: ${sum(gRlogs, 'rFemale')}, Weaners: ${sum(gRlogs, 'rWeaners')}, Kits: ${sum(gRlogs, 'rKits')}\n`;
-      text += `    Bought: AdultM:${sum(gRlogs, 'boughtAdultMale')}, AdultF:${sum(gRlogs, 'boughtAdultFemale')}, Weaners:${sum(gRlogs, 'boughtWeaners')}, Kits:${sum(gRlogs, 'boughtKits')}\n`;
-      text += `    Litters: ${sum(gRlogs, 'litters')}, New Kits: ${sum(gRlogs, 'newKits')}, Sold: ${sum(gRlogs, 'rabbitsSold')}\n`;
-      text += `    Deaths (M/F/W/K): ${sum(gRlogs, 'dMale')}/${sum(gRlogs, 'dFemale')}/${sum(gRlogs, 'dWeaners')}/${sum(gRlogs, 'dKits')}\n\n`;
-    }
+    text += '  ── RABBIT ──\n';
+    gRlogs.forEach(l => {
+      text += `    ${l.workerName}: Males:${l.rMale}, Females:${l.rFemale}, Weaners:${l.rWeaners}, Kits:${l.rKits}\n`;
+      text += `      Feed per treatment: Control:${l.feedControl||0}g, T1:${l.feedTreatment1||0}g, T2:${l.feedTreatment2||0}g, T3:${l.feedTreatment3||0}g, T4:${l.feedTreatment4||0}g\n`;
+      text += `      Water: ${l.waterLitres||0}L (${l.waterTreatment||'No treatment'})\n`;
+      text += `      Weight per treatment: Control:${l.weightControl||0}kg, T1:${l.weightTreatment1||0}kg, T2:${l.weightTreatment2||0}kg, T3:${l.weightTreatment3||0}kg, T4:${l.weightTreatment4||0}kg\n`;
+      text += `      Bought: AdultM:${l.boughtAdultMale||0}, AdultF:${l.boughtAdultFemale||0}, Weaners:${l.boughtWeaners||0}, Kits:${l.boughtKits||0}\n`;
+      if(l.matingDate) text += `      Mating Date: ${l.matingDate}, Rabbits Mated: ${l.rabbitsMated||0}, EDD: ${l.edd||'—'}, Delivery: ${l.deliveryDate||'—'}, Expected: ${l.expectedAtBirth||0}\n`;
+      text += `      Litters: ${l.litters||0}, New Kits: ${l.newKits||0}, Sold: ${l.rabbitsSold||0}\n`;
+      text += `      Deaths: Male:${l.dMale||0}, Female:${l.dFemale||0}, Weaner:${l.dWeaners||0}, Kit:${l.dKits||0}${l.cause?' ('+l.cause+')':''}\n`;
+    });
+    text += `    Totals — Males: ${sum(gRlogs,'rMale')}, Females: ${sum(gRlogs,'rFemale')}, Weaners: ${sum(gRlogs,'rWeaners')}, Kits: ${sum(gRlogs,'rKits')}\n`;
+    text += `    Feed per treatment: Control:${sum(gRlogs,'feedControl')}g, T1:${sum(gRlogs,'feedTreatment1')}g, T2:${sum(gRlogs,'feedTreatment2')}g, T3:${sum(gRlogs,'feedTreatment3')}g, T4:${sum(gRlogs,'feedTreatment4')}g\n`;
+    text += `    Water: ${sum(gRlogs,'waterLitres')}L\n`;
+    text += `    Weight per treatment: Control:${sum(gRlogs,'weightControl')}kg, T1:${sum(gRlogs,'weightTreatment1')}kg, T2:${sum(gRlogs,'weightTreatment2')}kg, T3:${sum(gRlogs,'weightTreatment3')}kg, T4:${sum(gRlogs,'weightTreatment4')}kg\n`;
+    text += `    Bought: AdultM:${sum(gRlogs,'boughtAdultMale')}, AdultF:${sum(gRlogs,'boughtAdultFemale')}, Weaners:${sum(gRlogs,'boughtWeaners')}, Kits:${sum(gRlogs,'boughtKits')}\n`;
+    text += `    Litters: ${sum(gRlogs,'litters')}, New Kits: ${sum(gRlogs,'newKits')}, Sold: ${sum(gRlogs,'rabbitsSold')}\n`;
+    text += `    Deaths (M/F/W/K): ${sum(gRlogs,'dMale')}/${sum(gRlogs,'dFemale')}/${sum(gRlogs,'dWeaners')}/${sum(gRlogs,'dKits')}\n\n`;
   });
 
   text += 'Generated: ' + new Date().toLocaleString();
@@ -657,23 +584,19 @@ async function makeReport(type, specificDate = null) {
   document.getElementById('reportBox').classList.remove('hidden');
 }
 
-function printReport() {
-  const reportContent = document.getElementById('reportText').textContent;
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write('<html><head><title>Farm Report</title></head><body>');
-  printWindow.document.write('<pre style="white-space: pre-wrap; font-family: monospace; font-size: 14px;">');
-  printWindow.document.write(reportContent);
-  printWindow.document.write('</pre>');
-  printWindow.document.write('</body></html>');
-  printWindow.document.close();
-  printWindow.print();
+function printReport(){
+  const content = document.getElementById('reportText').textContent;
+  const win = window.open('', '_blank');
+  win.document.write('<pre style="font-family:monospace;white-space:pre-wrap">' + content + '</pre>');
+  win.document.close();
+  win.print();
 }
 
 function shareWhatsApp(){
   const baseUrl = window.location.href.split('?')[0];
   const reportLink = baseUrl + '?tab=reports';
   const periodText = lastReportType === 'daily' ? 'today' : 'this week';
-  const msg = `Good day sir, this is the farm report for ${periodText}. Please check the dashboard for full details: ${reportLink}`;
+  const msg = `Good day sir, this is the rabbit farm report for ${periodText}. Please check the dashboard for full details: ${reportLink}`;
   window.open('https://wa.me/2348132146857?text=' + encodeURIComponent(msg), '_blank');
 }
 

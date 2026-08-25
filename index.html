@@ -140,7 +140,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     </div>
   </div>
   <div class="card"><div class="section-label">💀 Mortality Trend</div><div class="group-tabs" id="mortalityGroupTabs"></div><div class="chart-container"><canvas id="mortalityChart"></canvas></div></div>
-  <div class="card"><div class="section-label">⚖️ Average Rabbit Weight (Control Group)</div><div class="group-tabs" id="weightGroupTabs"></div><div class="chart-container"><canvas id="weightChart"></canvas></div></div>
+  <div class="card"><div class="section-label">⚖️ Average Rabbit Weight (Rabbit 1)</div><div class="group-tabs" id="weightGroupTabs"></div><div class="chart-container"><canvas id="weightChart"></canvas></div></div>
   <div class="card"><div class="section-label">💰 Rabbit Sales</div><div class="group-tabs" id="salesGroupTabs"></div><div class="chart-container"><canvas id="salesChart"></canvas></div></div>
   <div class="card">
     <div class="section-label">💧 Water Intake</div>
@@ -323,9 +323,7 @@ function renderRecentActivity(){
       let details=`Feed entries: ${l.feedEntries?.length||0} rabbits | Weight entries: ${l.weightEntries?.length||0} rabbits`;
       if(l.litterEntries && l.litterEntries.length>0) details+=` | Litters: ${l.litters}, Kits: ${l.newKits}`;
       details+=` | Deaths: ${l.deaths||0}`;
-      if(l.deathEntries && l.deathEntries.length>0) {
-        details+=` (${l.deathEntries.map(e=>`${e.category} R${e.rabbit}:${e.count}`).join(', ')})`;
-      }
+      if(l.deathEntries && l.deathEntries.length>0) details+=` (${l.deathEntries.map(e=>`${e.category} R${e.rabbit}:${e.count}`).join(', ')})`;
       if(l.cause) details+=` | Cause: ${l.cause}`;
       if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
       return `<div class="timeline-item">
@@ -453,10 +451,9 @@ async function updateAnalytics(){
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'},ticks:{precision:0}}}}
   });
 
-  // Weight (average of control group? we can just show the last weight entry for rabbit 1 as representative)
+  // Weight (average of rabbit 1 as representative)
   const weightData=days.map(day=>{
     const logsForDay=groupLogs.filter(l=>new Date(l.date).toDateString()===day);
-    // get rabbit 1 weight from weightEntries if exists
     const w = logsForDay.map(l=>l.weightEntries?.find(e=>e.rabbit==1)?.weightKg).filter(v=>v!=null);
     return w.length?w[w.length-1]:null;
   });

@@ -458,21 +458,31 @@ async function updateAnalytics(){
     stat('green',totalEggs,'Total Eggs')+stat('amber',totalRabbitsSold,'Rabbits Sold')+stat('red',totalDeathsC+totalDeathsR,'Total Deaths')+stat('blue',totalWater+' L','Water');
 
   const labelDays=days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
-
   const groupLogs=analyticsGroup==='all'?periodLogs:periodLogs.filter(l=>l.groupId===analyticsGroup);
 
   // Egg production global
   const eggData=days.map(day=>sum(periodLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'eggsGood'));
   const ctxEgg=document.getElementById('yieldChart').getContext('2d');
   if(charts.yield) charts.yield.destroy();
-  charts.yield=new Chart(ctxEgg,{type:'bar',data:{labels:labelDays,datasets:[{label:'Good Eggs',data:eggData,backgroundColor:'#16a34a',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Eggs'},ticks:{precision:0}}}});
+  charts.yield=new Chart(ctxEgg,{
+    type:'bar',
+    data:{labels:labelDays,datasets:[{label:'Good Eggs',data:eggData,backgroundColor:'#16a34a',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Eggs'},ticks:{precision:0}}}}
+  });
 
   // Mortality
   const cDeathsData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='chicken'&&new Date(l.date).toDateString()===day),'deaths'));
   const rDeathsData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'deaths'));
   const ctxMort=document.getElementById('mortalityChart').getContext('2d');
   if(charts.mortality) charts.mortality.destroy();
-  charts.mortality=new Chart(ctxMort,{type:'line',data:{labels:labelDays,datasets:[{label:'Chicken Deaths',data:cDeathsData,borderColor:'#d97706',backgroundColor:'rgba(253,230,138,0.3)',tension:0.2,fill:true},{label:'Rabbit Deaths',data:rDeathsData,borderColor:'#dc2626',backgroundColor:'rgba(254,202,202,0.3)',tension:0.2,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'},ticks:{precision:0}}}});
+  charts.mortality=new Chart(ctxMort,{
+    type:'line',
+    data:{labels:labelDays,datasets:[
+      {label:'Chicken Deaths',data:cDeathsData,borderColor:'#d97706',backgroundColor:'rgba(253,230,138,0.3)',tension:0.2,fill:true},
+      {label:'Rabbit Deaths',data:rDeathsData,borderColor:'#dc2626',backgroundColor:'rgba(254,202,202,0.3)',tension:0.2,fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Deaths'},ticks:{precision:0}}}}
+  });
 
   // Weight (rabbit 1 as representative)
   const weightData=days.map(day=>{
@@ -482,13 +492,21 @@ async function updateAnalytics(){
   });
   const ctxWeight=document.getElementById('weightChart').getContext('2d');
   if(charts.weight) charts.weight.destroy();
-  charts.weight=new Chart(ctxWeight,{type:'line',data:{labels:labelDays,datasets:[{label:'Rabbit 1 Weight (kg)',data:weightData,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',tension:0.3,spanGaps:true,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Weight (kg)'}}}});
+  charts.weight=new Chart(ctxWeight,{
+    type:'line',
+    data:{labels:labelDays,datasets:[{label:'Rabbit 1 Weight (kg)',data:weightData,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.1)',tension:0.3,spanGaps:true,fill:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Weight (kg)'}}}}
+  });
 
   // Rabbit sales
   const salesData=days.map(day=>sum(groupLogs.filter(l=>l.farm==='rabbit'&&new Date(l.date).toDateString()===day),'rabbitsSold'));
   const ctxSales=document.getElementById('salesChart').getContext('2d');
   if(charts.sales) charts.sales.destroy();
-  charts.sales=new Chart(ctxSales,{type:'bar',data:{labels:labelDays,datasets:[{label:'Rabbits Sold',data:salesData,backgroundColor:'#ec4899',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Sold'},ticks:{precision:0}}}});
+  charts.sales=new Chart(ctxSales,{
+    type:'bar',
+    data:{labels:labelDays,datasets:[{label:'Rabbits Sold',data:salesData,backgroundColor:'#ec4899',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Sold'},ticks:{precision:0}}}}
+  });
 
   updateWaterChart();
 }
@@ -520,7 +538,11 @@ async function updateWaterChart(){
 
   const ctxWater=document.getElementById('waterChart').getContext('2d');
   if(charts.water) charts.water.destroy();
-  charts.water=new Chart(ctxWater,{type:'bar',data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#06b6d4',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'},ticks:{precision:0}}}});
+  charts.water=new Chart(ctxWater,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#06b6d4',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'},ticks:{precision:0}}}}
+  });
 }
 
 function destroyAllCharts(){

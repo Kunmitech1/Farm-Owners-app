@@ -90,7 +90,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .total-num{font-size:1.4rem;font-weight:900;line-height:1}
 .total-label{font-size:0.65rem;opacity:0.75;margin-top:4px;font-weight:600;line-height:1.2}
 
-/* === DETAILED RABBIT VIEW === */
+/* DETAILED RABBIT VIEW */
 .detail-group{margin-bottom:28px;background:var(--card);border-radius:20px;padding:18px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
 .detail-group-name{font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:6px}
 .detail-group-sub{font-size:0.75rem;color:var(--slate);margin-bottom:14px}
@@ -116,6 +116,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .extra-data span{background:#f8fafc;padding:2px 10px;border-radius:12px;font-weight:600;color:var(--text)}
 .no-data-msg{color:#94a3b8;font-size:0.8rem;padding:6px 0}
 .worker-tag{background:var(--navy);color:#fff;font-size:0.6rem;padding:1px 8px;border-radius:10px;display:inline-block;margin-right:6px}
+
+/* SETTINGS PANEL */
+.settings-panel{background:#f8fafc;border-radius:14px;padding:16px;margin-top:12px}
+.settings-panel .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.settings-panel .toggle-label{font-weight:600;font-size:0.85rem}
+.switch{position:relative;width:44px;height:24px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:24px}
+.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%}
+input:checked+.slider{background:var(--green)}
+input:checked+.slider:before{transform:translateX(20px)}
+.settings-save-btn{margin-top:12px}
 </style>
 </head>
 <body>
@@ -141,7 +153,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="card"><div class="section-label">🐔 Chicken Farm — Today</div><div class="stat-grid" id="chickenStats"></div></div>
   <div class="card"><div class="section-label">🐇 Rabbit Farm — Today</div><div class="stat-grid" id="rabbitStats"></div></div>
   
-  <!-- DETAILED RABBIT VIEW -->
   <div style="margin:0 18px 18px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <span style="font-weight:800;font-size:1rem;color:var(--navy)">🐇 All Rabbits – Today's Data</span>
@@ -164,6 +175,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="form-group"><div class="form-label">Group</div><select class="form-input" id="workerGroupSelect"><option value="">Select group…</option></select></div>
     <div class="form-group"><div class="form-label">Worker Name</div><div class="add-row"><input type="text" class="form-input" id="newWorkerName" placeholder="e.g. Musa"><button class="btn btn-primary btn-sm" onclick="addWorker()">Add</button></div></div>
     <div id="allWorkersList"></div>
+  </div>
+  <!-- Group Settings Card -->
+  <div class="card" id="groupSettingsCard">
+    <div class="section-label">⚙️ Group Settings</div>
+    <div class="form-group">
+      <div class="form-label">Select Group to Configure</div>
+      <select class="form-input" id="settingsGroupSelect" onchange="loadGroupSettings()"><option value="">Select group…</option></select>
+    </div>
+    <div id="settingsContainer"></div>
   </div>
 </div>
 
@@ -323,6 +343,7 @@ function init(){
     renderGroupManage();
     updateOverview();
     renderAnalyticsGroupTabs();
+    populateSettingsDropdown();
     if(!document.getElementById('tab-activity').classList.contains('hidden')) renderRecentActivity();
   });
   db.ref('workers').on('value', snap => {
@@ -349,11 +370,26 @@ async function addGroup(){
   const pin=document.getElementById('newGroupPin').value.trim();
   if(!name||!pin){alert('Enter group name and PIN');return;}
   const id='g'+Date.now();
-  await db.ref('groups/'+id).set({id,name,pin});
+  const defaultSettings = {
+    chickenEnabled: true,
+    rabbitEnabled: true,
+    rabbitSections: {
+      animals: true,
+      feed: false,
+      weight: false,
+      mating: false,
+      litters: false,
+      sales: false,
+      purchases: false,
+      mortality: true
+    }
+  };
+  await db.ref('groups/'+id).set({id,name,pin, settings: defaultSettings});
   document.getElementById('newGroupName').value='';
   document.getElementById('newGroupPin').value='';
   renderGroupManage();
   renderAnalyticsGroupTabs();
+  populateSettingsDropdown();
 }
 async function deleteGroup(id){
   if(!confirm('Delete group and workers?'))return;
@@ -362,6 +398,7 @@ async function deleteGroup(id){
   await db.ref('groups/'+id).remove();
   renderGroupManage();
   renderAnalyticsGroupTabs();
+  populateSettingsDropdown();
 }
 async function addWorker(){
   const name=document.getElementById('newWorkerName').value.trim();
@@ -390,17 +427,71 @@ function renderGroupManage(){
   });
 }
 
-function renderAnalyticsGroupTabs(){
+// ---- GROUP SETTINGS ----
+function populateSettingsDropdown(){
   getGroups().then(groups=>{
-    const base=`<span class="group-tab ${analyticsGroup==='all'?'active':''}" onclick="setAnalyticsGroup('all')">All Groups</span>`;
-    const groupTabs=groups.map(g=>`<span class="group-tab ${analyticsGroup===g.id?'active':''}" onclick="setAnalyticsGroup('${g.id}')">${g.name}</span>`).join('');
-    ['mortalityGroupTabs','weightGroupTabs','salesGroupTabs','waterGroupTabs'].forEach(id=>document.getElementById(id).innerHTML=base+groupTabs);
+    const sel=document.getElementById('settingsGroupSelect');
+    sel.innerHTML='<option value="">Select group to configure…</option>'+groups.map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
   });
 }
-function setAnalyticsGroup(id){
-  analyticsGroup=id;
-  renderAnalyticsGroupTabs();
-  if(!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
+
+function loadGroupSettings(){
+  const groupId = document.getElementById('settingsGroupSelect').value;
+  if(!groupId){ document.getElementById('settingsContainer').innerHTML=''; return; }
+  db.ref('groups/'+groupId+'/settings').once('value').then(snap => {
+    let settings = snap.val() || {};
+    if(!settings.chickenEnabled) settings.chickenEnabled = false;
+    if(!settings.rabbitEnabled) settings.rabbitEnabled = false;
+    if(!settings.rabbitSections) settings.rabbitSections = { animals: true, feed: false, weight: false, mating: false, litters: false, sales: false, purchases: false, mortality: true };
+    let html = `
+      <div class="settings-panel">
+        <div class="toggle-row"><span class="toggle-label">🐔 Chicken Farm Enabled</span><label class="switch"><input type="checkbox" id="s_chicken" ${settings.chickenEnabled?'checked':''}><span class="slider"></span></label></div>
+        <div class="toggle-row"><span class="toggle-label">🐇 Rabbit Farm Enabled</span><label class="switch"><input type="checkbox" id="s_rabbit" ${settings.rabbitEnabled?'checked':''} onchange="toggleRabbitSections()"><span class="slider"></span></label></div>
+        <div id="rabbitSectionsContainer">
+          <div class="toggle-row"><span class="toggle-label">   Animals Met</span><label class="switch"><input type="checkbox" id="s_animals" ${settings.rabbitSections.animals!==false?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Feed & Water (with treatments)</span><label class="switch"><input type="checkbox" id="s_feed" ${settings.rabbitSections.feed?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Weekly Weight</span><label class="switch"><input type="checkbox" id="s_weight" ${settings.rabbitSections.weight?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Mating</span><label class="switch"><input type="checkbox" id="s_mating" ${settings.rabbitSections.mating?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Litters & Kits</span><label class="switch"><input type="checkbox" id="s_litters" ${settings.rabbitSections.litters?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Sales</span><label class="switch"><input type="checkbox" id="s_sales" ${settings.rabbitSections.sales?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Purchases</span><label class="switch"><input type="checkbox" id="s_purchases" ${settings.rabbitSections.purchases?'checked':''}><span class="slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">   Mortality</span><label class="switch"><input type="checkbox" id="s_mortality" ${settings.rabbitSections.mortality!==false?'checked':''}><span class="slider"></span></label></div>
+        </div>
+        <button class="btn btn-primary btn-sm settings-save-btn" onclick="saveGroupSettings('${groupId}')">💾 Save Settings</button>
+      </div>
+    `;
+    document.getElementById('settingsContainer').innerHTML = html;
+    toggleRabbitSections();
+  });
+}
+
+function toggleRabbitSections(){
+  const rabbitEnabled = document.getElementById('s_rabbit').checked;
+  const container = document.getElementById('rabbitSectionsContainer');
+  if(container) container.style.display = rabbitEnabled ? 'block' : 'none';
+}
+
+async function saveGroupSettings(groupId){
+  const chicken = document.getElementById('s_chicken').checked;
+  const rabbit = document.getElementById('s_rabbit').checked;
+  const animals = document.getElementById('s_animals').checked;
+  const feed = document.getElementById('s_feed').checked;
+  const weight = document.getElementById('s_weight').checked;
+  const mating = document.getElementById('s_mating').checked;
+  const litters = document.getElementById('s_litters').checked;
+  const sales = document.getElementById('s_sales').checked;
+  const purchases = document.getElementById('s_purchases').checked;
+  const mortality = document.getElementById('s_mortality').checked;
+
+  const settings = {
+    chickenEnabled: chicken,
+    rabbitEnabled: rabbit,
+    rabbitSections: { animals, feed, weight, mating, litters, sales, purchases, mortality }
+  };
+  await db.ref('groups/'+groupId+'/settings').set(settings);
+  alert('Settings saved!');
+  loadGroupSettings();
+  renderGroupManage();
 }
 
 // ---- ACTIVITY ----
@@ -624,6 +715,19 @@ function totalItem(num,label){ return `<div class="total-item"><div class="total
 function setRange(range){ activeRange=range; document.querySelectorAll('.range-tab').forEach(b=>b.classList.remove('active')); document.querySelector(`.range-tab[onclick="setRange('${range}')"]`).classList.add('active'); updateAnalytics(); }
 function setWaterRange(r){ waterRange=r; updateWaterChart(); }
 
+function renderAnalyticsGroupTabs(){
+  getGroups().then(groups=>{
+    const base=`<span class="group-tab ${analyticsGroup==='all'?'active':''}" onclick="setAnalyticsGroup('all')">All Groups</span>`;
+    const groupTabs=groups.map(g=>`<span class="group-tab ${analyticsGroup===g.id?'active':''}" onclick="setAnalyticsGroup('${g.id}')">${g.name}</span>`).join('');
+    ['mortalityGroupTabs','weightGroupTabs','salesGroupTabs','waterGroupTabs'].forEach(id=>document.getElementById(id).innerHTML=base+groupTabs);
+  });
+}
+function setAnalyticsGroup(id){
+  analyticsGroup=id;
+  renderAnalyticsGroupTabs();
+  if(!document.getElementById('tab-analytics').classList.contains('hidden')) updateAnalytics();
+}
+
 async function updateAnalytics(){
   const logs=await getLogs();
   if(logs.length===0){ destroyAllCharts(); document.getElementById('weeklyKPI').innerHTML='<div class="empty-state">No data recorded yet.</div>'; return; }
@@ -797,7 +901,7 @@ function showTab(tab){
   });
   document.querySelectorAll('.bottom-nav button').forEach((b,i)=>b.classList.toggle('active',['overview','groups','analytics','activity','reports'][i]===tab));
   if(tab==='overview') updateOverview();
-  if(tab==='groups') renderGroupManage();
+  if(tab==='groups'){ renderGroupManage(); populateSettingsDropdown(); }
   if(tab==='activity') renderRecentActivity();
   if(tab==='analytics'){ renderAnalyticsGroupTabs(); updateAnalytics(); }
 }

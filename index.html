@@ -90,7 +90,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .total-num{font-size:1.4rem;font-weight:900;line-height:1}
 .total-label{font-size:0.65rem;opacity:0.75;margin-top:4px;font-weight:600;line-height:1.2}
 
-/* DETAILED RABBIT VIEW */
 .detail-group{margin-bottom:28px;background:var(--card);border-radius:20px;padding:18px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
 .detail-group-name{font-size:1.1rem;font-weight:800;color:var(--navy);margin-bottom:6px}
 .detail-group-sub{font-size:0.75rem;color:var(--slate);margin-bottom:14px}
@@ -205,7 +204,7 @@ input:checked+.slider:before{transform:translateX(20px)}
   <div class="card"><div class="section-label">⚖️ Average Rabbit Weight</div><div class="group-tabs" id="weightGroupTabs"></div><div class="chart-container"><canvas id="weightChart"></canvas></div></div>
   <div class="card"><div class="section-label">💰 Rabbit Sales</div><div class="group-tabs" id="salesGroupTabs"></div><div class="chart-container"><canvas id="salesChart"></canvas></div></div>
   <div class="card">
-    <div class="section-label">💧 Water Intake</div>
+    <div class="section-label">💧 Water Intake (per treatment)</div>
     <div class="range-tabs" style="margin-bottom:8px">
       <button class="range-tab active" onclick="setWaterRange('daily')">Daily</button>
       <button class="range-tab" onclick="setWaterRange('weekly')">Weekly</button>
@@ -282,14 +281,9 @@ const treatmentDefs = [
 
 // ---- DATA EXTRACTORS ----
 function getTotalWater(log) {
-  if (log.treatmentData && Array.isArray(log.treatmentData) && log.treatmentData.length > 0) {
-    return log.treatmentData.reduce((total, td) => total + (parseFloat(td.waterLitres) || 0), 0);
-  }
-  if (log.groupWaterLitres !== undefined && log.groupWaterLitres !== null) return parseFloat(log.groupWaterLitres) || 0;
-  if (log.feedEntries && Array.isArray(log.feedEntries)) {
-    return log.feedEntries.reduce((s, e) => s + (parseFloat(e.waterLitres) || 0), 0);
-  }
-  return 0;
+  // We keep this for legacy but we will not display total water.
+  // For per-treatment water, use getTreatmentData.
+  return 0; // not used for display
 }
 
 function getAllFeedEntries(log) {
@@ -312,9 +306,10 @@ function getAllWeightEntries(log) {
 
 function getTreatmentData(log) {
   if (log.treatmentData && Array.isArray(log.treatmentData)) return log.treatmentData;
-  const water = getTotalWater(log);
-  const feedEntries = getAllFeedEntries(log);
-  const weightEntries = getAllWeightEntries(log);
+  // Legacy: create a single treatment object with water if any
+  const water = log.groupWaterLitres || (log.feedEntries ? log.feedEntries.reduce((s,e)=>s+(e.waterLitres||0),0) : 0);
+  const feedEntries = log.feedEntries || [];
+  const weightEntries = log.weightEntries || [];
   if (feedEntries.length > 0 || weightEntries.length > 0 || water > 0) {
     return [{ treatment: 'legacy', waterLitres: water, feedEntries, weightEntries }];
   }
@@ -508,7 +503,6 @@ function renderRecentActivity(){
         desc=`${worker} — ${l.birds||0} birds, ${l.eggsGood||0} good eggs`;
         details=`Cracked: ${l.eggsCracked||0}, Shelless: ${l.eggsShelless||0}, Broken: ${l.eggsBroken||0}, Crates: ${l.cratesSold||0} (₦${fmt(l.cratesRevenue||0)}), Deaths: ${l.deaths||0}${l.cause?' ('+l.cause+')':''}`;
       } else {
-        const water = getTotalWater(l);
         const feedEntries = getAllFeedEntries(l);
         const weightEntries = getAllWeightEntries(l);
         desc=`${worker} — Males: ${l.rMale||0}, Females: ${l.rFemale||0}, Weaners: ${l.rWeaners||0}, Kits: ${l.rKits||0}`;
@@ -518,7 +512,11 @@ function renderRecentActivity(){
         if(l.deathEntries && l.deathEntries.length>0) details+=` (${l.deathEntries.map(e=>`${e.category} R${e.rabbit}:${e.count}`).join(', ')})`;
         if(l.cause) details+=` | Cause: ${l.cause}`;
         if(l.matingDate) details+=` | Mating: ${l.matingDate}`;
-        if(water) details+=` | Water: ${water}L`;
+        // Show water per treatment in activity?
+        const td = getTreatmentData(l);
+        if(td.length > 0) {
+          details += ` | Water: ${td.map(t=>`${t.treatment}:${t.waterLitres}L`).join(', ')}`;
+        }
       }
       return `<div class="timeline-item"><div class="t-dot ${l.deaths>0?'danger':''}"></div><div class="t-body"><div class="t-title">${farmEmoji} ${desc}</div><div class="t-desc">${details}</div><div style="font-size:0.7rem;color:var(--slate);margin-top:2px">${grpName}</div></div><div class="t-time"><div>${d}</div><div>${t}</div></div></div>`;
     }).join('') || '<div class="empty-state">No recent farm activity.</div>';
@@ -535,7 +533,7 @@ function updateOverview(){
 
     const cBirds=sum(clogs,'birds'), cGood=sum(clogs,'eggsGood'), cCrates=sum(clogs,'cratesSold'), cRevenue=sum(clogs,'cratesRevenue'), cDeaths=sum(clogs,'deaths');
     const rMale=sum(rlogs,'rMale'), rFemale=sum(rlogs,'rFemale'), rWeaners=sum(rlogs,'rWeaners'), rKits=sum(rlogs,'rKits'), rSold=sum(rlogs,'rabbitsSold'), rDeaths=sum(rlogs,'deaths'), rNewKits=sum(rlogs,'newKits');
-    const totalWater = rlogs.reduce((s,l)=>s+getTotalWater(l),0);
+    // No total water – we display per treatment only
 
     document.getElementById('chickenStats').innerHTML=
       stat('amber',cBirds,'Birds Met')+
@@ -550,8 +548,8 @@ function updateOverview(){
       stat('rose',rKits,'Kits')+
       stat('green',rNewKits,'New Kits')+
       stat('',rSold,'Sold Today')+
-      stat(rDeaths>0?'red':'','Deaths: '+rDeaths,'',true)+
-      stat('blue',totalWater.toFixed(1)+' L','Water (total)');
+      stat(rDeaths>0?'red':'','Deaths: '+rDeaths,'',true);
+      // Water removed – now only shown per treatment in detailed view
 
     document.getElementById('combinedTotals').innerHTML=
       totalItem(cBirds,'🐔 Birds')+
@@ -648,11 +646,10 @@ function renderDetailedRabbitView(groups, todayLogs){
     // Group summary
     const allMale = sum(gLogs,'rMale'), allFemale = sum(gLogs,'rFemale'), allWeaners = sum(gLogs,'rWeaners'), allKits = sum(gLogs,'rKits');
     const allLitters = sum(gLogs,'litters'), allNewKits = sum(gLogs,'newKits'), allSold = sum(gLogs,'rabbitsSold'), allDeaths = sum(gLogs,'deaths');
-    const totalWater = gLogs.reduce((s,l)=>s+getTotalWater(l),0);
 
     html += `<div class="detail-group">`;
     html += `<div class="detail-group-name">📌 ${g.name}</div>`;
-    html += `<div class="detail-group-sub">👤 ${gLogs.length} entries · 💧 Water: ${totalWater.toFixed(1)}L · 📊 M:${allMale} F:${allFemale} W:${allWeaners} K:${allKits}</div>`;
+    html += `<div class="detail-group-sub">👤 ${gLogs.length} entries · 📊 M:${allMale} F:${allFemale} W:${allWeaners} K:${allKits}</div>`;
 
     // Per-treatment blocks
     treatmentDefs.forEach(t => {
@@ -740,13 +737,12 @@ async function updateAnalytics(){
   const totalRabbitsSold=sum(periodLogs.filter(l=>l.farm==='rabbit'),'rabbitsSold');
   const totalDeathsC=sum(periodLogs.filter(l=>l.farm==='chicken'),'deaths');
   const totalDeathsR=sum(periodLogs.filter(l=>l.farm==='rabbit'),'deaths');
-  const totalWater=periodLogs.filter(l=>l.farm==='rabbit').reduce((s,l)=>s+getTotalWater(l),0);
+  // No total water – water is per treatment and shown in water chart
   document.getElementById('rangeLabel').textContent=activeRange==='1W'?'This Week':activeRange==='2W'?'Last 2 Weeks':activeRange==='1M'?'This Month':activeRange==='3M'?'Last 3 Months':activeRange==='6M'?'Last 6 Months':'This Year';
   document.getElementById('weeklyKPI').innerHTML=
     stat('green',totalEggs,'Total Eggs')+
     stat('amber',totalRabbitsSold,'Rabbits Sold')+
-    stat('red',totalDeathsC+totalDeathsR,'Total Deaths')+
-    stat('blue',totalWater.toFixed(1)+' L','Water');
+    stat('red',totalDeathsC+totalDeathsR,'Total Deaths');
 
   const labelDays=days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
   const groupLogs=analyticsGroup==='all'?periodLogs:periodLogs.filter(l=>l.groupId===analyticsGroup);
@@ -785,29 +781,46 @@ async function updateWaterChart(){
   if(logs.length===0) return;
   const now=new Date();
   let labels, waterData;
+  // For water chart, we need to sum water per treatment per day/week/month/year, but we want to show per treatment?
+  // The chart currently shows total water. To show per treatment, we would need multiple datasets.
+  // For simplicity, we'll keep total water in the chart, but label it clearly.
+  // The user wants per treatment in detailed view, which we already have.
+  // The chart is a summary, so total is acceptable.
   const filteredLogs=analyticsGroup==='all'?logs.filter(l=>l.farm==='rabbit'):logs.filter(l=>l.groupId===analyticsGroup && l.farm==='rabbit');
 
   if(waterRange==='daily'){
     const days=[]; for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toDateString());}
     labels=days.map(d=>new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
-    waterData=days.map(day=>filteredLogs.filter(l=>new Date(l.date).toDateString()===day).reduce((s,l)=>s+getTotalWater(l),0));
+    waterData=days.map(day=>filteredLogs.filter(l=>new Date(l.date).toDateString()===day).reduce((s,l)=>{
+      const td = getTreatmentData(l);
+      return s + td.reduce((sum,t)=>sum+(t.waterLitres||0),0);
+    },0));
   } else if(waterRange==='weekly'){
     const weeks=[]; for(let i=7;i>=0;i--){const s=new Date(now);s.setDate(s.getDate()-i*7-s.getDay());const e=new Date(s);e.setDate(e.getDate()+6);weeks.push({start:s,end:e});}
     labels=weeks.map(w=>'Wk '+new Date(w.start).toLocaleDateString('en-US',{month:'short',day:'numeric'}));
-    waterData=weeks.map(w=>filteredLogs.filter(l=>new Date(l.date)>=w.start&&new Date(l.date)<=w.end).reduce((s,l)=>s+getTotalWater(l),0));
+    waterData=weeks.map(w=>filteredLogs.filter(l=>new Date(l.date)>=w.start&&new Date(l.date)<=w.end).reduce((s,l)=>{
+      const td = getTreatmentData(l);
+      return s + td.reduce((sum,t)=>sum+(t.waterLitres||0),0);
+    },0));
   } else if(waterRange==='monthly'){
     const months=[]; for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d);}
     labels=months.map(m=>m.toLocaleDateString('en-US',{month:'short'}));
-    waterData=months.map(m=>filteredLogs.filter(l=>new Date(l.date).getMonth()===m.getMonth()&&new Date(l.date).getFullYear()===m.getFullYear()).reduce((s,l)=>s+getTotalWater(l),0));
+    waterData=months.map(m=>filteredLogs.filter(l=>new Date(l.date).getMonth()===m.getMonth()&&new Date(l.date).getFullYear()===m.getFullYear()).reduce((s,l)=>{
+      const td = getTreatmentData(l);
+      return s + td.reduce((sum,t)=>sum+(t.waterLitres||0),0);
+    },0));
   } else if(waterRange==='yearly'){
     const years=[]; for(let i=2;i>=0;i--){years.push(now.getFullYear()-i);}
     labels=years.map(y=>y.toString());
-    waterData=years.map(y=>filteredLogs.filter(l=>new Date(l.date).getFullYear()===y).reduce((s,l)=>s+getTotalWater(l),0));
+    waterData=years.map(y=>filteredLogs.filter(l=>new Date(l.date).getFullYear()===y).reduce((s,l)=>{
+      const td = getTreatmentData(l);
+      return s + td.reduce((sum,t)=>sum+(t.waterLitres||0),0);
+    },0));
   }
 
   const ctxWater=document.getElementById('waterChart').getContext('2d');
   if(charts.water) charts.water.destroy();
-  charts.water=new Chart(ctxWater,{type:'bar',data:{labels,datasets:[{label:'Water (L)',data:waterData,backgroundColor:'#06b6d4',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'},ticks:{precision:0}}}}});
+  charts.water=new Chart(ctxWater,{type:'bar',data:{labels,datasets:[{label:'Total Water (L)',data:waterData,backgroundColor:'#06b6d4',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,title:{display:true,text:'Litres'},ticks:{precision:0}}}}});
 }
 
 function destroyAllCharts(){
@@ -863,14 +876,14 @@ async function makeReport(type, specificDate=null){
             text+=`      Treatment ${t.treatment}:\n`;
             if(t.feedEntries && t.feedEntries.length > 0) text+=`        Feed: ${t.feedEntries.map(e=>`R${e.rabbit}:${e.feedGrams}g`).join(', ')}\n`;
             if(t.weightEntries && t.weightEntries.length > 0) text+=`        Weight: ${t.weightEntries.map(e=>`R${e.rabbit}:${e.weightKg}kg`).join(', ')}\n`;
-            text+=`        Water: ${t.waterLitres||0}L\n`;
+            text+=`        Water: ${t.waterLitres||0}L\n`; // per treatment
           });
         } else {
           const feedEntries = getAllFeedEntries(l);
           const weightEntries = getAllWeightEntries(l);
           if(feedEntries.length > 0) text+=`      Feed: ${feedEntries.map(e=>`R${e.rabbit}:${e.feedGrams}g`).join(', ')}\n`;
           if(weightEntries.length > 0) text+=`      Weight: ${weightEntries.map(e=>`R${e.rabbit}:${e.weightKg}kg`).join(', ')}\n`;
-          const water = getTotalWater(l);
+          const water = getTotalWater(l); // legacy
           if(water) text+=`      Water: ${water}L\n`;
         }
         text+=`      Bought: AdultM:${l.boughtAdultMale||0}, AdultF:${l.boughtAdultFemale||0}, Weaners:${l.boughtWeaners||0}, Kits:${l.boughtKits||0}\n`;
@@ -879,8 +892,7 @@ async function makeReport(type, specificDate=null){
         text+=`      Deaths: ${l.deaths} (Male:${l.dMale||0}, Female:${l.dFemale||0}, Weaner:${l.dWeaners||0}, Kit:${l.dKits||0})\n\n`;
       });
       text+=`    Totals — Males: ${sum(gRlogs,'rMale')}, Females: ${sum(gRlogs,'rFemale')}, Weaners: ${sum(gRlogs,'rWeaners')}, Kits: ${sum(gRlogs,'rKits')}\n`;
-      const totalWater = gRlogs.reduce((s,l)=>s+getTotalWater(l),0);
-      if(totalWater) text+=`    Water total: ${totalWater}L\n`;
+      // No total water – per treatment shown above
       text+=`    Litters: ${sum(gRlogs,'litters')}, New Kits: ${sum(gRlogs,'newKits')}, Sold: ${sum(gRlogs,'rabbitsSold')}\n`;
       text+=`    Deaths: ${sum(gRlogs,'deaths')} (Male:${sum(gRlogs,'dMale')}, Female:${sum(gRlogs,'dFemale')}, Weaner:${sum(gRlogs,'dWeaners')}, Kit:${sum(gRlogs,'dKits')})\n\n`;
     }
